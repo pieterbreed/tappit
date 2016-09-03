@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file. This change
 ###
 - Enough API to make examples 2 and 3 pass too.
 
-## [0.9.5]
+## [0.9.4] - 2016-09-02
 ### Fixed
 - fixed minor issues with the `doc/example1.boot` script
 
@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file. This change
 ### Added
 - Enough API to make `doc/example1.boot` pass.
 
-[Unreleased]: https://github.com/pieterbreed/tappit/compare/tappit-0.9.5...HEAD
-[0.9.5]: https://github.com/pieterbreed/tappit/compare/tappit-0.9.0...tappit-0.9.5
+[Unreleased]: https://github.com/pieterbreed/tappit/compare/tappit-0.9.4...HEAD
+[0.9.4]: https://github.com/pieterbreed/tappit/compare/tappit-0.9.0...tappit-0.9.4
 [0.9.0]: https://github.com/pieterbreed/tappit/compare/540aeff...tappit-0.9.0
  
