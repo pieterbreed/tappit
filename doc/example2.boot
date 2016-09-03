@@ -1,12 +1,11 @@
 #!/usr/bin/env boot
 
 (set-env! :dependencies '[[pieterbreed/tappit "0.9.0-SNAPSHOT"]])
-(require '[tappit.producer :only [ok! plan-for!]])
+(require '[tappit.producer :only [ok! isa! eq! plan-for!]])
 
 ;; ----------------------------------------
 ;; OK - Let's test some stuff!
 
-;; plan 15 tests, only make 13
 (plan-for! 15)
 
 (ok! 1)
@@ -20,8 +19,11 @@
 (ok! (not false) "and nothing but the truth.")
 (ok! false "and we'll know if you lie to us")
 
-(ok! (int? 10) "10 is an integer")
-(ok! (string? "10") "\"10\" is a string")
+(isa! 10 int? "10")
+(isa! "10" string? "takes any predicate")
 
 (ok! 0 "zero is true" :todo "be more like ruby")
 (ok! nil "nil is true" :skip "not possible in this universe")
+
+(eq! "not" "equal" "two different strings are not equal")
+
