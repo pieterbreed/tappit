@@ -7,47 +7,104 @@
 (defn ->ok!
   ([t thing] (->ok! t thing ""))
   ([t thing name & _]
-   (swap! t (fn [current]
-
-              (as-> current $
-                
-                ;; init the counter if this is the first test
-                (if-not (:counter $)
-                  (assoc current :counter 0)
-                  current)
-
-                ;; increment it for the next test result
-                (update-in $ [:counter] inc)
-
-                ;; print the status line
-                (do 
-                  (print (str (if thing "ok" "not ok")
-                              " " (:counter $)
-                              (if (< 0 (count name)) (str " - " name))))
-                  ;; (and lastly return the current state value)
-                  $))))
+   (swap! t (fn
+              [{last-action :last-action
+                :as current}]
+              (let [new (assoc current
+                               :oks (let [oks (get current :oks 0)]
+                                      (if thing (inc oks) oks))
+                               :counter (inc (get current :counter 0))
+                               :last-action :->ok)]
+                (print (str (if (= last-action :->ok)
+                              "\n"
+                              "")
+                            (if thing
+                              "ok"
+                              "not ok")
+                            " " (:counter new)
+                            (if (< 0 (count name)) (str " - " name))))
+                new)))
    ok))
 
-(defn ->isa! [& rst])
+(defn ->isa! [& rst]
+  ok)
 
-(defn ->plan-for! [t n & _]
-  (let [cleanup (atom nil)]
-    (if (not= @t
-              (swap! t (fn [current]
-                         ;; non-silently ignore bad usage of the api by
-                         ;; leaving a snarky diagnostics message
-                         (if (:planned-for current)
-                           (do (csp/go (->diag! t "You can only plan once! :@"))
-                               current)
-                           (assoc current
-                                  :planned-for n
-                                  :pnl t)))))
-      (print (str "1.." n)))))
+(defn ->plan-for
+  [{:as current
+    last-action :last-action}
+   n]
+  ;; non-silently ignore bad usage of the api by
+  ;; leaving a snarky diagnostics message
+  (if (= last-action
+         :->ok)
+    (println))
+  (println (str "1.." n))
+  (assoc current
+         :planned-for n
+         :last-action :->plan-for))
 
-(defn ->diag! [t msg & _]
-  (print (str "# " msg)))
+(defn ->plan-for!
+  [t n & _]
+  (swap! t ->plan-for n)
+  ok)
 
-(defn ->cleanup! [t])
+(defn ->diag [{last-action :last-action
+               diags :diags
+               :as current}
+              msg]
+
+  (println (str (if (= last-action
+                       :->ok)
+                  " "
+                  "")
+                (str "# " msg)))
+  
+  (assoc current
+         :last-action :->diag
+         :diags (if diags (inc diags)
+                    1)))
+
+(defn ->diag!
+  [t msg]
+  (swap! t ->diag msg)
+  ok)
+
+(defn ->cleanup
+  [{:keys [last-action
+           planned-for
+           counter
+           oks]
+    :as current}]
+
+  (as-> current $
+    (->diag $ "")
+    (->diag $ "----------------------------------------")
+    (if (nil? planned-for)
+      (do 
+        (->plan-for $ counter)
+        (if (= counter oks)
+          (->diag $ "All good")
+          (->diag $ (str "You did "
+                         counter
+                         " and had "
+                         oks
+                         " oks."))
+          ))
+      (do 
+        (if (= planned-for counter oks)
+          (->diag $ "All good")
+          (->diag $ (str "You planned "
+                         planned-for
+                         ", did "
+                         counter
+                         " and had "
+                         oks
+                         " oks.")))))))
+
+(defn ->cleanup!
+  [t]
+  (swap! t ->cleanup)
+  ok)
 
 
 (defmacro with-tap!
@@ -59,5 +116,5 @@
          ~'diag! (fn [& rst#] (apply ->diag! tap# rst#))
          result# (do ~@body)]
      (->cleanup! tap#)
-     result#))
+     (deref tap#)))
 
