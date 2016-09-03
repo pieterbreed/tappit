@@ -13,6 +13,6 @@ All notable changes to this project will be documented in this file. This change
 ### Added
 - Enough API to make `doc/example1.boot` pass.
 
-[Unreleased]: https://github.com/your-name/tappit/compare/0.9.5...HEAD
-[0.9.5]: https://github.com/your-name/tappit/compare/0.9.0...0.9.5
-[0.9.0]: https://github.com/your-name/tappit/compare/540aeff...0.9.0
+[Unreleased]: https://github.com/pieterbreed/tappit/compare/0.9.5...HEAD
+[0.9.5]: https://github.com/pieterbreed/tappit/compare/0.9.0...0.9.5
+[0.9.0]: https://github.com/pieterbreed/tappit/compare/540aeff...0.9.0
