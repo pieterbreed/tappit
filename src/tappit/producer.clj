@@ -4,27 +4,42 @@
 (defonce ok :ok)
 (defonce not-ok (not ok))
 
+(defn ->ok
+  [{last-action :last-action
+    oks :oks
+    counter :counter
+    :as current
+    :or {oks 0
+         counter 0}}
+   thing
+   & {name :name
+      todo :todo
+      skip :skip
+      :or {name ""
+           todo nil
+           skip nil}}]
+  (let [new (assoc current
+                   :oks (if thing (inc oks) oks)
+                   :counter (inc counter)
+                   :last-action :->ok)]
+    (print (str (if (= last-action :->ok)
+                  "\n"
+                  "")
+                (if thing
+                  "ok"
+                  "not ok")
+                " " (:counter new)
+                (if (< 0 (count name)) (str " - " name))))
+    new))
+
 (defn ->ok!
-  ([t thing] (->ok! t thing ""))
-  ([t thing name & _]
-   (swap! t (fn
-              [{last-action :last-action
-                :as current}]
-              (let [new (assoc current
-                               :oks (let [oks (get current :oks 0)]
-                                      (if thing (inc oks) oks))
-                               :counter (inc (get current :counter 0))
-                               :last-action :->ok)]
-                (print (str (if (= last-action :->ok)
-                              "\n"
-                              "")
-                            (if thing
-                              "ok"
-                              "not ok")
-                            " " (:counter new)
-                            (if (< 0 (count name)) (str " - " name))))
-                new)))
-   ok))
+  [t thing & rst]
+
+  (if (string? (first rst))
+    (apply ->ok! t thing :name (first rst) (rest rst))
+    (apply swap! t ->ok thing rst))
+  
+  ok)
 
 (defn ->isa! [& rst]
   ok)

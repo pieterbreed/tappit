@@ -22,7 +22,7 @@
   (ok! (not false) "and nothing but the truth.")
   (ok! false "and we'll know if you lie to us")
 
-  (ok! (int? 10) "10 is an integer")
+  (ok! (integer? 10) "10 is an integer")
   (ok! (string? "10") "\"10\" is a string")
 
   (ok! 0 "zero is true" :todo "be more like ruby")
