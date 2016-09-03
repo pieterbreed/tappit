@@ -1,4 +1,4 @@
-(defproject pieterbreed/tappit "0.9.0"
+(defproject pieterbreed/tappit "0.9.1-SNAPSHOT"
   :description "TAP Help for Clojure. Inspired by https://github.com/rjbs/tapsimple"
   :url ""
   :license {:name "Eclipse Public License"
