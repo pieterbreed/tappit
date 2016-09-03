@@ -30,7 +30,16 @@
                   "not ok")
                 " " (:counter new)
                 (if (< 0 (count name)) (str " - " name))))
-    new))
+
+    (cond
+      (not (nil? skip))
+      (->diag new (str "SKIP " skip))
+
+      (not (nil? todo))
+      (->diag new (str (if thing "BONUS " "TODO ")
+                       todo))
+
+      true new)))
 
 (defn ->ok!
   [t thing & rst]
