@@ -4,7 +4,7 @@
 (defonce ok :ok)
 (defonce not-ok (not ok))
 
-(define ->diag)
+(def ->diag)
 
 (defn ->ok
   [{last-action :last-action
