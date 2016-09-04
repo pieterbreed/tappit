@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## [Unreleased]
+### Adding
+- `isa!` and `eq!`
+### Fixed
+- Undid the cleverness of turning passing skips into bonus comments
 ###
 - Enough API to make examples 2 and 3 pass too.
 

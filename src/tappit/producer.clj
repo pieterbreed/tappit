@@ -38,7 +38,7 @@
       (->diag new (str "SKIP " skip))
 
       (not (nil? todo))
-      (->diag new (str (if thing "BONUS " "TODO ")
+      (->diag new (str "TODO "
                        todo))
 
       true new)))
@@ -52,8 +52,13 @@
   
   ok)
 
-(defn ->isa! [& rst]
-  ok)
+(defn ->=!
+  [t thing1 thing2 & rst]
+  (apply ->ok! t (= thing1 thing2) rst))
+
+(defn ->isa!
+  [t thing pred & rst]
+  (apply ->ok! t (pred thing) rst))
 
 (defn ->plan-for
   [{:as current
@@ -140,6 +145,7 @@
          ~'isa! (fn [& rst#] (apply ->isa! tap# rst#))
          ~'plan-for! (fn [& rst#] (apply ->plan-for! tap# rst#))
          ~'diag! (fn [& rst#] (apply ->diag! tap# rst#))
+         ~'=! (fn [& rst#] (apply ->=! tap# rst#))
          result# (do ~@body)]
      (->cleanup! tap#)
      (deref tap#)))

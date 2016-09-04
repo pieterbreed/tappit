@@ -1,6 +1,6 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[pieterbreed/tappit "0.9.4"]])
+(set-env! :dependencies '[[pieterbreed/tappit "0.9.5-SNAPSHOT"]])
 (require '[tappit.producer :refer [with-tap! ok]])
 
 ;; ----------------------------------------
@@ -25,5 +25,5 @@
   (ok! (integer? 10) "10 is an integer")
   (ok! (string? "10") "\"10\" is a string")
 
-  (ok! 0 "zero is true" :todo "be more like ruby")
+  (ok! 0 "zero is true" :todo "bonus - quite a lot like ruby")
   (ok! nil "nil is true" :skip "not possible in this universe"))
