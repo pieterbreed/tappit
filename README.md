@@ -8,7 +8,7 @@ This work is inspired by [this python TAP library](https://github.com/rjbs/tapsi
 
 ### Example1
 
-Based on [this Python `tapsimple` module example (https://github.com/rjbs/tapsimple/blob/master/examples/ok.t).]
+Based on [this Python `tapsimple` module example](https://github.com/rjbs/tapsimple/blob/master/examples/ok.t).
 
 
 ```
