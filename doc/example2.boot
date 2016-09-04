@@ -26,5 +26,6 @@
   (ok! 0 "zero is true" :todo "be more like ruby")
   (ok! nil "nil is true" :skip "not possible in this universe")
 
-  (=! "not" "equal" "two different strings are not equal"))
+  (=! "not" "equal" "two different strings are not equal")
+  (=! [:a "2" \c] (vector :a "2" \c) "deep-equal, because clojure and values"))
 
