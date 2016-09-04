@@ -40,7 +40,7 @@ $ cat doc/example1.boot
   (ok! (integer? 10) "10 is an integer")
   (ok! (string? "10") "\"10\" is a string")
 
-  (ok! 0 "zero is true" :todo "bonus - quite a lot like ruby")
+  (ok! 0 "zero is true" :todo "be more like python")
   (ok! nil "nil is true" :skip "not possible in this universe"))
 $ doc/example1.boot 
 1..15
@@ -55,12 +55,14 @@ ok 8 - and nothing but the truth.
 not ok 9 - and we'll know if you lie to us
 ok 10 - 10 is an integer
 ok 11 - "10" is a string
-ok 12 - zero is true # TODO bonus - quite a lot like ruby
+ok 12 - zero is true # TODO be more like python
 not ok 13 - nil is true # SKIP not possible in this universe
 # 
 # ----------------------------------------
 # You planned 15, did 13 and had 11 oks.
 ```
+
+There are more examples in the `doc` folder.
 
 ## License
 

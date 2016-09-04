@@ -25,5 +25,5 @@
   (ok! (integer? 10) "10 is an integer")
   (ok! (string? "10") "\"10\" is a string")
 
-  (ok! 0 "zero is true" :todo "bonus - quite a lot like ruby")
+  (ok! 0 "zero is true" :todo "be more like python")
   (ok! nil "nil is true" :skip "not possible in this universe"))
