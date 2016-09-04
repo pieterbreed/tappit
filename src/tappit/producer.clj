@@ -5,6 +5,7 @@
 (defonce not-ok (not ok))
 
 (def ->diag)
+(def -bailed?)
 
 (defn ->ok
   [{last-action :last-action
@@ -20,28 +21,30 @@
       :or {name ""
            todo nil
            skip nil}}]
-  (let [new (assoc current
-                   :oks (if thing (inc oks) oks)
-                   :counter (inc counter)
-                   :last-action :->ok)]
-    (print (str (if (= last-action :->ok)
-                  "\n"
-                  "")
-                (if thing
-                  "ok"
-                  "not ok")
-                " " (:counter new)
-                (if (< 0 (count name)) (str " - " name))))
+  (if (-bailed? current)
+    current
+    (let [new (assoc current
+                     :oks (if thing (inc oks) oks)
+                     :counter (inc counter)
+                     :last-action :->ok)]
+      (print (str (if (= last-action :->ok)
+                    "\n"
+                    "")
+                  (if thing
+                    "ok"
+                    "not ok")
+                  " " (:counter new)
+                  (if (< 0 (count name)) (str " - " name))))
 
-    (cond
-      (not (nil? skip))
-      (->diag new (str "SKIP " skip))
+      (cond
+        (not (nil? skip))
+        (->diag new (str "SKIP " skip))
 
-      (not (nil? todo))
-      (->diag new (str "TODO "
-                       todo))
+        (not (nil? todo))
+        (->diag new (str "TODO "
+                         todo))
 
-      true new)))
+        true new))))
 
 (defn ->ok!
   [t thing & rst]
@@ -64,15 +67,16 @@
   [{:as current
     last-action :last-action}
    n]
-  ;; non-silently ignore bad usage of the api by
-  ;; leaving a snarky diagnostics message
-  (if (= last-action
-         :->ok)
-    (println))
-  (println (str "1.." n))
-  (assoc current
-         :planned-for n
-         :last-action :->plan-for))
+  (if (-bailed? current)
+    current
+    (do 
+      (if (= last-action
+             :->ok)
+        (println))
+      (println (str "1.." n))
+      (assoc current
+             :planned-for n
+             :last-action :->plan-for))))
 
 (defn ->plan-for!
   [t n & _]
@@ -84,21 +88,54 @@
                :as current}
               msg]
 
-  (println (str (if (= last-action
-                       :->ok)
-                  " "
-                  "")
-                (str "# " msg)))
-  
-  (assoc current
-         :last-action :->diag
-         :diags (if diags (inc diags)
-                    1)))
+  (if (-bailed? current)
+    current
+    (do 
+      (println (str (if (= last-action
+                           :->ok)
+                      " "
+                      "")
+                    (str "# " msg)))
+      
+      (assoc current
+             :last-action :->diag
+             :diags (if diags (inc diags)
+                        1)))))
 
 (defn ->diag!
   [t msg]
   (swap! t ->diag msg)
   ok)
+
+(defn ->bail-out
+  [{:as current
+    last-action :last-action}
+   msg]
+  (if (-bailed? current)
+    current
+    (do 
+      (if (= last-action :->ok) (println))
+      (println (str "Bail out! " msg))
+      (assoc current
+             :bailed true
+             :last-action :->bail-out))))
+
+(defn ->bail-out!
+  [t msg]
+  (swap! t ->bail-out msg)
+  ok)
+
+(defn -bailed?
+  [current]
+  (:bailed current))
+
+(defn ->bailed?
+  [t]
+  (-bailed? @t))
+
+(defn ->not-bailed?
+  [t]
+  (not (->bailed? t)))
 
 (defn ->cleanup
   [{:keys [last-action
@@ -146,6 +183,9 @@
          ~'plan-for! (fn [& rst#] (apply ->plan-for! tap# rst#))
          ~'diag! (fn [& rst#] (apply ->diag! tap# rst#))
          ~'=! (fn [& rst#] (apply ->=! tap# rst#))
+         ~'bail-out! (fn [& rst#] (apply ->bail-out! tap# rst#))
+         ~'bailed? (fn [& rst#] (apply ->bailed? tap# rst#))
+         ~'not-bailed? (fn [& rst#] (apply ->not-bailed? tap# rst#))
          result# (do ~@body)]
      (->cleanup! tap#)
      (deref tap#)))
