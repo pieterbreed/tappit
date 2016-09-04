@@ -1,6 +1,6 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[pieterbreed/tappit "0.9.5-SNAPSHOT"]])
+(set-env! :dependencies '[[pieterbreed/tappit "0.9.5"]])
 (require '[tappit.producer :refer [ok with-tap!]])
 
 ;; ----------------------------------------
