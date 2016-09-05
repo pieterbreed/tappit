@@ -20,23 +20,23 @@
   (ok!
     [this]
     [this thing]
-    [this thing msg]
+    [this thing name]
     [this thing flag value]
-    [this thing msg flag value]
+    [this thing name flag value]
     "Base TAP operation. Assert that something is OK. Produces 'ok' or 'not ok'.")
   
   (isa!
     [this thing pred]
-    [this thing pred msg]
+    [this thing pred name]
     [this thing pred flag value]
-    [this thing pred msg flag value]
+    [this thing pred name flag value]
     "Predicate-based assertions.")
   
   (=!
     [this thing1 thing2]
-    [this thing1 thing2 msg]
+    [this thing1 thing2 name]
     [this thing1 thing2 flag value]
-    [this thing1 thing2 msg flag value]
+    [this thing1 thing2 name flag value]
     "Asserting that two things have the same value."))
 
 ;; ----------------------------------------
@@ -235,19 +235,19 @@
 
       (ok! [_] (->ok! a true))
       (ok! [_ thing] (->ok! a thing))
-      (ok! [_ thing msg] (->ok! a thing msg))
+      (ok! [_ thing name] (->ok! a thing name))
       (ok! [_ thing flag value] (->ok! a thing flag value))
-      (ok! [_ thing msg flag value] (->ok! a thing msg flag value))
+      (ok! [_ thing name flag value] (->ok! a thing name flag value))
 
       (isa! [_ thing pred] (->isa! a thing pred))
-      (isa! [_ thing pred msg] (->isa! a thing pred msg))
+      (isa! [_ thing pred name] (->isa! a thing pred name))
       (isa! [_ thing pred flag value] (->isa! a thing pred flag value))
-      (isa! [_ thing pred msg flag value] (->isa! a thing pred msg flag value))
+      (isa! [_ thing pred name flag value] (->isa! a thing pred name flag value))
 
       (=! [_ thing1 thing2] (->=! a thing1 thing2))
-      (=! [_ thing1 thing2 msg] (->=! a thing1 thing2 msg))
+      (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
       (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
-      (=! [_ thing1 thing2 msg flag value] (->=! a thing1 thing2 msg flag value)))))
+      (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
 
 ;; ----------------------------------------
 

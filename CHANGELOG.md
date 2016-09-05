@@ -2,12 +2,13 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## Planned
-### Changed
-- protocol based api instead of the leaky defmacro for `with-tap!`
+
 ## [Unreleased]
 ### Added
 - generative testing harness for acceptance testing
 - travis ci
+### Changed
+- protocol based api for the leaky defmacro `with-tap!`
 
 ## [0.9.5] - 2016-09-03
 ### Fixed
