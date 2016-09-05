@@ -254,16 +254,15 @@
 
 (defmacro with-tap!
   [& body]
-  `(let [tap# (atom {})
-         ~'ok! (fn [& rst#] (apply ->ok! tap# rst#))
-         ~'isa! (fn [& rst#] (apply ->isa! tap# rst#))
-         ~'plan-for! (fn [& rst#] (apply ->plan-for! tap# rst#))
-         ~'diag! (fn [& rst#] (apply ->diag! tap# rst#))
-         ~'=! (fn [& rst#] (apply ->=! tap# rst#))
-         ~'bail-out! (fn [& rst#] (apply ->bail-out! tap# rst#))
-         ~'bailed? (fn [& rst#] (apply ->bailed? tap# rst#))
-         ~'not-bailed? (fn [& rst#] (apply ->not-bailed? tap# rst#))
+  `(let [tap# (create-atom-tap-producer)
+         ~'ok! (fn [& rst#] (apply ok! tap# rst#))
+         ~'isa! (fn [& rst#] (apply isa! tap# rst#))
+         ~'plan-for! (fn [& rst#] (apply plan-for! tap# rst#))
+         ~'diag! (fn [& rst#] (apply diag! tap# rst#))
+         ~'=! (fn [& rst#] (apply =! tap# rst#))
+         ~'bail-out! (fn [& rst#] (apply bail-out! tap# rst#))
+         ~'bailed? (fn [& rst#] (apply bailed? tap# rst#))
+         ~'not-bailed? (fn [& rst#] (apply not-bailed? tap# rst#))
          result# (do ~@body)]
-     (->cleanup! tap#)
-     (deref tap#)))
+     (done! tap#)))
 
