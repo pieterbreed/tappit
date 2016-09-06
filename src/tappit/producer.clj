@@ -1,7 +1,55 @@
-(ns tappit.producer)
+(ns tappit.producer
+  "Import this namespace if you want to produce TAP-based output, for eg:
 
-;; protocols are low-level and variadic arguments
-;; don't work well with them.
+  (require '[tappit.producer :refer [with-tap! ok]])
+
+  (with-tap!
+
+  ;; plan 15 tests, only make 13
+  (plan-for! 15)
+
+  (ok! 1)
+  (ok! 1 \"everything is ok\")
+  (ok! 0 \"never fails (in clojure)\")
+
+  (ok! (= 10 10) \"is ten ten?\")
+  (ok! ok \"even ok is ok!\")
+  (ok! (type ok) \"ok is not nil. ok is not nothing.\")
+  (ok! true \"the truth will set you ok.\")
+  (ok! (not false) \"and nothing but the truth.\")
+  (ok! false \"and we'll know if you lie to us\")
+
+  (ok! (integer? 10) \"10 is an integer\")
+  (ok! (string? \"10\") \\\"10\\\" is a string\")
+
+  (ok! 0 \"zero is true\" :todo \"be more like python\")
+  (ok! nil \"nil is true\" :skip \"not possible in this universe\"))
+
+  to produce this output:
+
+  1..15
+  ok 1
+  ok 2 - everything is ok
+  ok 3 - never fails (in clojure)
+  ok 4 - is ten ten?
+  ok 5 - even ok is ok!
+  ok 6 - ok is not nil. ok is not nothing.
+  ok 7 - the truth will set you ok.
+  ok 8 - and nothing but the truth.
+  not ok 9 - and we'll know if you lie to us
+  ok 10 - 10 is an integer
+  ok 11 - \"10\" is a string
+  ok 12 - zero is true # TODO be more like python
+  not ok 13 - nil is true # SKIP not possible in this universe
+  # 
+  # ----------------------------------------
+  # You planned 15, did 13 and had 11 oks.
+
+  "
+  (:require [tappit.reducer :as tr])) ;; tr->tap-reduce
+
+;; protocols are low-level and variadic arguments don't
+;; work well with them.
 ;; each ok!-based operation has 4 overloads.
 ;; eg (ok! thing "this is the name")
 ;;    (ok! thing :name "this is the name")
@@ -10,13 +58,13 @@
 (defprotocol Producer
   "Test Anything Protocol _Producer_"
   (plan-for!   [this n] "Creates the 1..N line")
-  (diag!       [this msg] "Creates a diagnostics line")
-  (bail-out!   [this msg] "Bail out / stop testing early")
-  (done!       [this] "Wrap up the protocol")
+  (diag!       [this msg] "Creates a diagnostics line (ie it starts with '#')")
+  (bail-out!   [this msg] "Bail out / stop early")
+  (done!       [this] "Wrap up the protocol. Usually with-style api's should call this for you. This can only be called once, when you're done.")
 
   (bailed?     [this] "Did we bail already?")
   (not-bailed? [this] "Are we still good to go?")
-
+  
   (ok!
     [this]
     [this thing]
@@ -91,23 +139,6 @@
 
         true new))))
 
-(defn ->ok!
-  [t thing & rst]
-
-  (if (string? (first rst))
-    (apply ->ok! t thing :name (first rst) (rest rst))
-    (apply swap! t ->ok thing rst))
-  
-  ok)
-
-(defn ->=!
-  [t thing1 thing2 & rst]
-  (apply ->ok! t (= thing1 thing2) rst))
-
-(defn ->isa!
-  [t thing pred & rst]
-  (apply ->ok! t (pred thing) rst))
-
 (defn ->plan-for
   [{:as current
     last-action :last-action}
@@ -122,11 +153,6 @@
       (assoc current
              :planned-for n
              :last-action :->plan-for))))
-
-(defn ->plan-for!
-  [t n & _]
-  (swap! t ->plan-for n)
-  ok)
 
 (defn ->diag [{last-action :last-action
                diags :diags
@@ -147,10 +173,6 @@
              :diags (if diags (inc diags)
                         1)))))
 
-(defn ->diag!
-  [t msg]
-  (swap! t ->diag msg)
-  ok)
 
 (defn ->bail-out
   [{:as current
@@ -164,11 +186,6 @@
       (assoc current
              :bailed true
              :last-action :->bail-out))))
-
-(defn ->bail-out!
-  [t msg]
-  (swap! t ->bail-out msg)
-  ok)
 
 (defn -bailed?
   [current]
@@ -213,6 +230,41 @@
                          " and had "
                          oks
                          " oks.")))))))
+
+
+;; ----------------------------------------
+
+(defn ->ok!
+  [t thing & rst]
+
+  (if (string? (first rst))
+    (apply ->ok! t thing :name (first rst) (rest rst))
+    (apply swap! t ->ok thing rst))
+  
+  ok)
+
+(defn ->=!
+  [t thing1 thing2 & rst]
+  (apply ->ok! t (= thing1 thing2) rst))
+
+(defn ->isa!
+  [t thing pred & rst]
+  (apply ->ok! t (pred thing) rst))
+
+(defn ->plan-for!
+  [t n & _]
+  (swap! t ->plan-for n)
+  ok)
+
+(defn ->diag!
+  [t msg]
+  (swap! t ->diag msg)
+  ok)
+
+(defn ->bail-out!
+  [t msg]
+  (swap! t ->bail-out msg)
+  ok)
 
 (defn ->cleanup!
   [t]

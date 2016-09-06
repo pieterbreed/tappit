@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## Planned
 ### Changed
-- Change `tappit.producer/with-tap!` to use the `tappit.reducer` api instead of the complected `*out*` and `atom`-based implementation I started with.
+- Change `tappit.producer!` to use the `tappit.reducer` api instead of the complected `*out*` and `atom`-based implementation I started with.
 
 ## [Unreleased]
 ### Changed
