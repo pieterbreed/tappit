@@ -30,7 +30,8 @@
 (deftest lines-generators-tests
   (is (specced-fn-passes-check 'tappit.reducer/diag))
   (is (specced-fn-passes-check 'tappit.reducer/bail))
-  (is (specced-fn-passes-check 'tappit.reducer/plan)))
+  (is (specced-fn-passes-check 'tappit.reducer/plan))
+  (is (specced-fn-passes-check 'tappit.reducer/test-line)))
 
 
 

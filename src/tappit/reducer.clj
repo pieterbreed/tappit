@@ -3,15 +3,15 @@
 
 ;; ----------------------------------------
 
-(s/def ::okness #{:ok :not-ok})
+(s/def ::ok-ness #{:ok :not-ok})
 (s/def ::name string?)
 (s/def ::test-nr pos-int?)
 (s/def ::detail (s/keys :opt [::name ::test-nr]))
 
 (s/def ::diagnostics-msg string?)
 (s/def ::inline-diagnostics-type #{:skip :todo :diag})
-(s/def ::inline-diagnostics (s/keys :req [::inline-diagnostics-type]
-                                    :opt [::diagnostics-msg]))
+(s/def ::inline-diagnostics (s/keys :req [::inline-diagnostics-type
+                                          ::diagnostics-msg]))
 (s/def ::diag-line (s/keys :req [::diagnostics-msg]))
 
 (s/def ::bail-out string?)
@@ -20,7 +20,7 @@
 (s/def ::plan-nr pos-int?)
 (s/def ::plan-line (s/keys :req [::plan-nr]))
 
-(s/def ::core-line (s/keys :req [::okness]
+(s/def ::test-line (s/keys :req [::ok-ness]
                            :opt [::detail
                                  ::inline-diagnostics]))
 
@@ -28,7 +28,7 @@
                :diag ::diag-line
                :bail ::bail-line
                :plan ::plan-line
-               :core ::core-line))
+               :test ::test-line))
 
 ;; ----------------------------------------
 ;; utils to create these lines in the correct format
@@ -69,15 +69,60 @@
 
 ;; --------------------
 
-(s/fdef plan
-  :args (s/cat :n pos-int?)
-  :ret ::plan-line
-  :fn #(= (-> % :ret ::plan-nr)
-          (-> % :args :n)))
-(defn plan
-  "Makes a bail-out line"
-  [n]
-  {::plan-nr n})
+(s/def ::test-arg-spec
+  (s/cat :ok-ness ::ok-ness
+         :detail (s/? (s/cat :test-nr ::test-nr
+                             :name ::name))
+         :inline-diagnostics (s/?
+                              (s/cat :diag-type ::inline-diagnostics-type
+                                     :diag-msg ::diagnostics-msg))))
+(s/fdef test-line
+  :args ::test-arg-spec
+  :ret ::test-line
+  :fn #(and (= (-> % :ret ::ok-ness)
+               (-> % :args :ok-ness))
+            (= (-> % :ret ::detail ::name)
+               (-> % :args :detail :name))
+            (= (-> % :ret ::detail ::test-nr)
+               (-> % :args :detail :test-nr))
+            (= (-> % :ret ::inline-diagnostics ::inline-diagnostics-type)
+               (-> % :args :inline-diagnostics :diag-type))
+            (= (-> % :ret ::inline-diagnostics ::diagnostics-msg)
+               (-> % :args :inline-diagnostics :diag-msg))))
+
+(defn test-line
+  "Makes a test data item.
+
+  eg: (test-line :ok :diag \"diagnostics example message\")
+      (test-line :not-ok 2 \"test name\")
+      (test-line :ok 3 \"test name\" :skip \"SKIP diagnostics message\") 
+      etc
+
+  in general: (test-line (one-of #{:ok :not-ok})
+                         (? test-nr-int 
+                            test-name-string)
+                         (? (one-of #{:diag :skip :todo})
+                            diagnostics-msg-string))
+  "
+  [& rst]
+  (let [args (s/conform ::test-arg-spec rst)
+        deets (:detail args)
+        diag (:inline-diagnostics args)]
+
+    ;; ok-ness is required, so start with that
+    (as-> {::ok-ness (:ok-ness args)} $
+
+      ;; add details, if given any
+      (if (nil? deets) $
+          (assoc $ ::detail {::name (:name deets)
+                             ::test-nr (:test-nr deets)}))
+
+      ;; add diagnostics, if given any
+      (if (nil? diag) $
+          (assoc $
+                 ::inline-diagnostics
+                 {::inline-diagnostics-type (:diag-type diag)
+                  ::diagnostics-msg (:diag-msg diag)})))))
 
 ;; ----------------------------------------
 
@@ -127,11 +172,11 @@
   "Creates a tap-reducer whose only job is to output to a writer (eg *out*). The only state it carries is if a bail-out has been found yet or not, after which nothing else will go out to that stream."
   [w] {:type ::->java.io.Writer
        :bailed false
-       :cores 0
+       :tests 0
        :writer w})
 
-(defn -get-string-writer-core-part [deets]
-  (let [status-part (condp = (::okness deets)
+(defn -get-string-writer-test-part [deets]
+  (let [status-part (condp = (::ok-ness deets)
                       :ok "ok"
                       :not-ok "not ok")
         counter-part (if (nil? (-> deets ::test-nr))
@@ -189,16 +234,16 @@
                                \newline))
                 (assoc current
                        :planned true))
-        :core (do
-                (.write w (str (-get-string-writer-core-part deets)
+        :test (do
+                (.write w (str (-get-string-writer-test-part deets)
                                \newline))
-                (update-in current [:cores] inc))))))
+                (update-in current [:tests] inc))))))
 
 (defmethod tap-reducer-cleanup ::->java.io.Writer
   [current]
   (if (:planned current) current
       (do 
-        (.write "1.." (:cores current)
+        (.write "1.." (:tests current)
                 \newline)
         current)))
 
@@ -227,8 +272,8 @@
           :bail (update-in current [:bailed] conj (::bail-out deets))
           :diag (update-in current [:nr-diags] inc)
           :plan (assoc current :planned-for (::plan-nr deets))
-          :core (let [core-line (s/conform ::core-line deets)
-                      ok-ness (::okness core-line)]
+          :test (let [test-line (s/conform ::test-line deets)
+                      ok-ness (::ok-ness test-line)]
 
                   (as-> current $
                     (update-in $ [(if (= ok-ness :ok)
