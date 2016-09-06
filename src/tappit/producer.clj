@@ -167,7 +167,7 @@
                       " "
                       "")
                     (str "# " msg)))
-      
+
       (assoc current
              :last-action :->diag
              :diags (if diags (inc diags)
@@ -300,6 +300,38 @@
       (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
       (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
       (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
+
+;; ----------------------------------------
+
+;; (defn create-atom-reducer-tap-producer
+;;   "Creates a tap-producing API, but using the tappit.reducer api"
+;;   []
+;;   (let [aa (atom (tr/make-commenting-reducer *out*))
+;;         ! (fn [item] (swap! a tr/tap-reducer item))]
+;;     (reify Producer
+;;       (plan-for! [_ n]   (! (tr/plan n)))
+;;       (diag!     [_ msg] (! (tr/diag msg)))
+;;       (bail-out! [_ msg] (! (tr/bail msg)))
+;;       (done!     [_]     (swap! aa tap-reducer-cleanup))
+
+;;       (bailed? [_] (->bailed? a))
+;;       (not-bailed? [_] (->not-bailed? a))
+
+;;       (ok! [_] (->ok! a true))
+;;       (ok! [_ thing] (->ok! a thing))
+;;       (ok! [_ thing name] (->ok! a thing name))
+;;       (ok! [_ thing flag value] (->ok! a thing flag value))
+;;       (ok! [_ thing name flag value] (->ok! a thing name flag value))
+
+;;       (isa! [_ thing pred] (->isa! a thing pred))
+;;       (isa! [_ thing pred name] (->isa! a thing pred name))
+;;       (isa! [_ thing pred flag value] (->isa! a thing pred flag value))
+;;       (isa! [_ thing pred name flag value] (->isa! a thing pred name flag value))
+
+;;       (=! [_ thing1 thing2] (->=! a thing1 thing2))
+;;       (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
+;;       (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
+;;       (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
 
 ;; ----------------------------------------
 

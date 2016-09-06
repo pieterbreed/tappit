@@ -39,7 +39,9 @@
   :fn #(= (-> % :ret ::diagnostics-msg)
           (-> % :args :msg)))
 (defn diag
-  "Make a diagnostics line item"
+  "Make a diagnostics item. They produce output like this:
+
+  # Diagnostics lines start with \\#"
   [msg]
   {::diagnostics-msg msg})
 
@@ -51,7 +53,11 @@
   :fn #(= (-> % :ret ::bail-out)
           (-> % :args :msg)))
 (defn bail
-  "Makes a bail-out line"
+  "Makes a bail-out item. They look like this in the output:
+
+  Bail out! No more Dylithium crystals
+
+  After the engine accepts this, no more output will be produced."
   [msg]
   {::bail-out msg})
 
@@ -63,7 +69,10 @@
   :fn #(= (-> % :ret ::plan-nr)
           (-> % :args :n)))
 (defn plan
-  "Makes a bail-out line"
+  "Produces a plan line in the output.
+   1..19
+
+  You may _optionally_ call this before you run any tests. If you don't know how many tests you are going to run, rather don't call this at all."
   [n]
   {::plan-nr n})
 
@@ -152,12 +161,15 @@
 
 (defmethod tap-reducer ::combinator
   [current x]
-  (update-in current
-             [:reducers]
-             (fn [reducers]
-               (->> reducers
-                    (map #(tap-reducer % x))
-                    (apply vector)))))
+  (if (or (nil? x)
+          (:bailed current))
+    current
+    (update-in current
+               [:reducers]
+               (fn [reducers]
+                 (->> reducers
+                      (map #(tap-reducer % x))
+                      (apply vector))))))
 
 (defmethod tap-reducer-cleanup ::combinator
   [current]
@@ -216,8 +228,6 @@
 
   (if (or (nil? new)
           (:bailed current))
-    
-    ;; short-circuit on error conditions
     current
 
     ;; normal processing
@@ -264,6 +274,7 @@
   []
   
   {:type ::aggregator
+   :bailed false
    :nr-diags 0
    :nr-oks 0
    :nr-notoks 0
@@ -271,23 +282,24 @@
 
 (defmethod tap-reducer ::aggregator
   [current new]
-  (if (nil? new) current
-      (let [line (s/conform ::line new)
-            op        (first line)
-            deets (second line)]
-        (condp = op
-          :bail (update-in current [:bailed] conj (::bail-out deets))
-          :diag (update-in current [:nr-diags] inc)
-          :plan (assoc current :planned-for (::plan-nr deets))
-          :test (let [test-line (s/conform ::test-line deets)
-                      ok-ness (::ok-ness test-line)]
+  (if (or (nil? new)
+          (:bailed current))
+    current
+    (let [line (s/conform ::line new)
+          op        (first line)
+          deets (second line)]
+      (condp = op
+        :bail (update-in current [:bailed] (::bail-out deets))
+        :diag (update-in current [:nr-diags] inc)
+        :plan (assoc current :planned-for (::plan-nr deets))
+        :test (let [test-line (s/conform ::test-line deets)
+                    ok-ness (::ok-ness test-line)]
 
-                  (as-> current $
-                    (update-in $ [(if (= ok-ness :ok)
-                                    :nr-oks
-                                    :nr-notoks)] inc)
-                    (update-in $ [:total] inc)))
-          current))))
+                (as-> current $
+                  (update-in $ [(if (= ok-ness :ok)
+                                  :nr-oks
+                                  :nr-notoks)] inc)
+                  (update-in $ [:total] inc)))))))
 
 ;; ----------------------------------------
 
@@ -300,11 +312,14 @@
 
 (defmethod tap-reducer ::commenting-reducer
   [current new]
-  (assoc current
-         :string-writer (tap-reducer (:string-writer current)
-                                     new)
-         :stats         (tap-reducer (:stats current)
-                                     new)))
+  (if (or (nil? new)
+          (:bailed current))
+    current
+    (assoc current
+           :string-writer (tap-reducer (:string-writer current)
+                                       new)
+           :stats         (tap-reducer (:stats current)
+                                       new))))
 
 (defmethod tap-reducer-cleanup ::commenting-reducer
   [current]
