@@ -7,20 +7,77 @@
 (s/def ::name string?)
 (s/def ::test-nr pos-int?)
 (s/def ::detail (s/keys :opt [::name ::test-nr]))
-(s/def ::diagnostics-type #{:skip :todo :diag})
+
 (s/def ::diagnostics-msg string?)
-(s/def ::diagnostics (s/keys :req [::diagnostics-type]
-                             :opt [::diagnostics-msg]))
-(s/def ::plan-nr pos-int?)
+(s/def ::inline-diagnostics-type #{:skip :todo :diag})
+(s/def ::inline-diagnostics (s/keys :req [::inline-diagnostics-type]
+                                    :opt [::diagnostics-msg]))
+(s/def ::diag-line (s/keys :req [::diagnostics-msg]))
+
 (s/def ::bail-out string?)
+(s/def ::bail-line (s/keys :req [::bail-out]))
+
+(s/def ::plan-nr pos-int?)
+(s/def ::plan-line (s/keys :req [::plan-nr]))
+
 (s/def ::core-line (s/keys :req [::okness]
                            :opt [::detail
-                                 ::diagnostics]))
+                                 ::inline-diagnostics]))
+
 (s/def ::line (s/or
-               :diag (s/keys :req [::diagnostics-msg])
-               :bail (s/keys :req [::bail-out])
-               :plan (s/keys :req [::plan-nr])
+               :diag ::diag-line
+               :bail ::bail-line
+               :plan ::plan-line
                :core ::core-line))
+
+;; ----------------------------------------
+;; utils to create these lines in the correct format
+
+(s/fdef diag
+  :args (s/cat :msg string?)
+  :ret ::diag-line
+  :fn #(= (-> % :ret ::diagnostics-msg)
+          (-> % :args :msg)))
+(defn diag
+  "Make a diagnostics line item"
+  [msg]
+  {::diagnostics-msg msg})
+
+;; --------------------
+
+(s/fdef bail
+  :args (s/cat :msg string?)
+  :ret ::bail-line
+  :fn #(= (-> % :ret ::bail-out)
+          (-> % :args :msg)))
+(defn bail
+  "Makes a bail-out line"
+  [msg]
+  {::bail-out msg})
+
+;; --------------------
+
+(s/fdef plan
+  :args (s/cat :n pos-int?)
+  :ret ::plan-line
+  :fn #(= (-> % :ret ::plan-nr)
+          (-> % :args :n)))
+(defn plan
+  "Makes a bail-out line"
+  [n]
+  {::plan-nr n})
+
+;; --------------------
+
+(s/fdef plan
+  :args (s/cat :n pos-int?)
+  :ret ::plan-line
+  :fn #(= (-> % :ret ::plan-nr)
+          (-> % :args :n)))
+(defn plan
+  "Makes a bail-out line"
+  [n]
+  {::plan-nr n})
 
 ;; ----------------------------------------
 
@@ -191,13 +248,13 @@
             :string-writer (make-string-writer-reducer)
             :stats (make-stats-aggregating-reducer)))
 
-(defmethod tap-reduce ::commenting-reducer
+(defmethod tap-reducer ::commenting-reducer
   [current new]
   (assoc current
-         :string-writer (tap-reduce (:string-writer current)
-                                    new)
-         :stats         (tap-reduce (:stats current)
-                                    new)))
+         :string-writer (tap-reducer (:string-writer current)
+                                     new)
+         :stats         (tap-reducer (:stats current)
+                                     new)))
 
 (defmethod tap-reducer-cleanup ::commenting-reducer
   [current]

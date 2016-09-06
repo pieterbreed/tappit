@@ -2,6 +2,9 @@
   (:require [tappit.reducer :refer :all]
             [clojure.test :refer :all]
             [clojure.string :as str]
+            [clojure.spec :as s]
+            [clojure.spec.gen :as sgen]
+            [clojure.spec.test :as stest]
             [clojure.test.check :as tc]
             [clojure.test.check.generators :as tcgen]
             [clojure.test.check.properties :as tcprop]
@@ -12,6 +15,24 @@
   (is (= :ok2 (-type-of-first {:a 1
                                :b 2
                                :type :ok2} :a :b :c :d))))
+
+;; ----------------------------------------
+
+(defn specced-fn-passes-check
+  "Utility function to check that tests pass"
+  [& fn-symbol]
+  (as-> fn-symbol $
+    (stest/check $)
+    (stest/summarize-results $)
+    (= (:total $)
+       (:check-passed $))))
+
+(deftest lines-generators-tests
+  (is (specced-fn-passes-check 'tappit.reducer/diag))
+  (is (specced-fn-passes-check 'tappit.reducer/bail))
+  (is (specced-fn-passes-check 'tappit.reducer/plan)))
+
+
 
 ;; ----------------------------------------
 
@@ -76,4 +97,13 @@
 
 ;; ----------------------------------------
 
-
+(tct/defspec stringwriter-reducer-produces-all-the-lines-1
+  1000
+  (tcprop/for-all
+   [noks tcgen/pos-int         ;; ok 1 okname\d+
+    nnotoks tcgen/pos-int      ;; not ok 1 notokname\d+
+    noks_skip tcgen/pos-int    ;; ok 1 skipname\d+ # SKIP skipname\d
+    nnotoks_todo tcgen/pos-int ;; not ok 1 todoname\d+ # TODO todoname\d+
+    ndiags tcgen/pos-int]      ;; # diag\d+
+   true))
+   
