@@ -143,7 +143,7 @@
     (diag (str "diag" i))))
 ;; (make-diag-lines 3)
 
-(defn make-random-document
+(defn make-random-document-lines
   [n-oks
    n-not-oks
    n-oks-skip
@@ -153,19 +153,32 @@
         not-ok-lines       (make-not-ok-lines n-not-oks)
         ok-skip-lines      (make-ok-skip-lines n-oks-skip)
         not-ok-todo-lines  (make-not-ok-todo-lines n-not-oks-todo)
-        diag-lines         (make-diag-lines n-diags)
+        diag-lines         (make-diag-lines n-diags)]
+    (shuffle 
+     (concat ok-lines
+             not-ok-lines
+             ok-skip-lines
+             not-ok-todo-lines
+             diag-lines))))
 
-        scrambled-all-lines (shuffle 
-                             (concat ok-lines
-                                     not-ok-lines
-                                     ok-skip-lines
-                                     not-ok-todo-lines
-                                     diag-lines))
+(defn make-random-document
+  [n-oks
+   n-not-oks
+   n-oks-skip
+   n-not-oks-todo
+   n-diags]
+  (let [scrambled-all-lines (make-random-document-lines n-oks
+                                                        n-not-oks
+                                                        n-oks-skip
+                                                        n-not-oks-todo
+                                                        n-diags)
         w (java.io.StringWriter.)
         string-tap-reducer (make-string-writer-reducer
                             w)]
-    (do (reduce tap-reducer string-tap-reducer scrambled-all-lines)
-        (.toString w))))
+    (do 
+      (tap-reducer-cleanup
+       (reduce tap-reducer string-tap-reducer scrambled-all-lines) )
+      (.toString w))))
 ;; (make-random-document 1 1 1 1 1)
 
 (tct/defspec stringwriter-reducer-produces-all-the-lines-1
@@ -197,4 +210,46 @@
           (= n-diags (count-nr-of-occurences-of-regex-in-string
                       #"(?m)# diag\d+"
                       random-document))))))
+
+
+;; ----------------------------------------
+
+(defn make-random-stats
+  [n-oks
+   n-not-oks
+   n-oks-skip
+   n-not-oks-todo
+   n-diags]
+  (let [ll (make-random-document-lines n-oks
+                                       n-not-oks
+                                       n-oks-skip
+                                       n-not-oks-todo
+                                       n-diags)]
+    (tap-reducer-cleanup
+     (reduce tap-reducer
+             (make-stats-aggregating-reducer)
+             ll))))
+
+(tct/defspec stats-aggregation-reducer-produces-sane-stats
+  1000
+  (tcprop/for-all
+   [n-oks tcgen/pos-int
+    n-not-oks tcgen/pos-int
+    n-oks-skip tcgen/pos-int
+    n-not-oks-todo tcgen/pos-int
+    n-diags tcgen/pos-int]
    
+   (let [random-stats (make-random-stats n-oks
+                                         n-not-oks
+                                         n-oks-skip
+                                         n-not-oks-todo
+                                         n-diags)]
+     (and (= (:total random-stats)
+             (+ n-oks n-not-oks n-oks-skip n-not-oks-todo))
+          (= (:nr-oks random-stats)
+             (+ n-oks n-oks-skip))
+          (= (:nr-notoks random-stats)
+             (+ n-not-oks n-not-oks-todo))
+          (= (:nr-diags random-stats)
+             n-diags)))))
+
