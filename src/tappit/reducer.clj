@@ -297,7 +297,7 @@
   "Creates a tap-reducer that embeds both a string-writer-reducer and a stat-aggregating reducer. It uses the stats to provide extra comments to humans after the string-writer is done. eg \"# All good!\" at the end of the stream."
   [w]
   (hash-map :type ::commenting-reducer
-            :string-writer (make-string-writer-reducer)
+            :string-writer (make-string-writer-reducer w)
             :stats (make-stats-aggregating-reducer)))
 
 (defmethod tap-reducer ::commenting-reducer
