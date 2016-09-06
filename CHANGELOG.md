@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## Planned
+### Changed
+- multi-method/reduce-based implementation for the tap producer
+
+## [Unreleased]
 
 ## [0.9.6] - 2016-09-05
 ### Added
