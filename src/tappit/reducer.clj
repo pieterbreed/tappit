@@ -24,9 +24,18 @@
 
 ;; ----------------------------------------
 
+(defn -type-of-first [current & _] (:type current))
+
 (defmulti tap-reducer
   "Clever pun, eh? \"Reduces\" an ordered sequence of taps into some other useful thing. Maybe a string-stream (like to stdout) or maybe an aggregation, for like stats or something."
-  (fn [current _] (:type current)))
+  -type-of-first)
+
+(defmulti tap-reducer-cleanup
+  "A cleanup step optionally has to run once the stream has been exhausted."
+  -type-of-first)
+
+;; default cleanup does nothing (for now)
+(defmethod tap-reducer-cleanup :default [current] current)
 
 ;; ----------------------------------------
 
@@ -35,16 +44,25 @@
   [& reducers]
   (hash-map
    :type ::combinator
-   :combinators reducers))
+   :reducers reducers))
 
 (defmethod tap-reducer ::combinator
   [current x]
   (update-in current
-             [:combinators]
+             [:reducers]
              (fn [reducers]
                (->> reducers
                     (map #(tap-reducer % x))
                     (apply vector)))))
+
+(defmethod tap-reducer-cleanup ::combinator
+  [current]
+
+  ;; run cleanup on the embedded reducers
+  (->> (:reducers current)
+       (map tap-reducer-cleanup)
+       vec
+       (assoc current :reducers)))
 
 ;; ----------------------------------------
 
@@ -52,6 +70,7 @@
   "Creates a tap-reducer whose only job is to output to a writer (eg *out*). The only state it carries is if a bail-out has been found yet or not, after which nothing else will go out to that stream."
   [w] {:type ::->java.io.Writer
        :bailed false
+       :cores 0
        :writer w})
 
 (defn -get-string-writer-core-part [deets]
@@ -111,11 +130,20 @@
         :plan (do
                 (.write w (str "1.." (::plan-nr deets)
                                \newline))
-                current)
+                (assoc current
+                       :planned true))
         :core (do
                 (.write w (str (-get-string-writer-core-part deets)
                                \newline))
-                current)))))
+                (update-in current [:cores] inc))))))
+
+(defmethod tap-reducer-cleanup ::->java.io.Writer
+  [current]
+  (if (:planned current) current
+      (do 
+        (.write "1.." (:cores current)
+                \newline)
+        current)))
 
 ;; ----------------------------------------
 
@@ -153,5 +181,49 @@
           current))))
 
 ;; ----------------------------------------
+
+;; ----------------------------------------
+
+(defn make-commenting-reducer
+  "Creates a tap-reducer that embeds both a string-writer-reducer and a stat-aggregating reducer. It uses the stats to provide extra comments to humans after the string-writer is done. eg \"# All good!\" at the end of the stream."
+  [w]
+  (hash-map :type ::commenting-reducer
+            :string-writer (make-string-writer-reducer)
+            :stats (make-stats-aggregating-reducer)))
+
+(defmethod tap-reduce ::commenting-reducer
+  [current new]
+  (assoc current
+         :string-writer (tap-reduce (:string-writer current)
+                                    new)
+         :stats         (tap-reduce (:stats current)
+                                    new)))
+
+(defmethod tap-reducer-cleanup ::commenting-reducer
+  [current]
+  (let [all-good (= (-> current :stats :nr-oks)
+                    (-> current :stats :total))
+
+        ;; we are going to produce one extra diagnostic message
+        ;; based on what the accumulated stats are telling us
+        human-status-msg (if all-good
+                           {::diagnostics-msg "All good!"}
+                           (let [stats (:stats current)
+                                 oks (:nr-oks stats)
+                                 total (:total stats)]
+                             {::diagnostics-msg (str "SCORE: (" oks
+                                                     "/" total
+                                                     ") "
+                                                     (double (-> (/ oks total)
+                                                                 (* 100)))
+                                                     "% OK")}))
+
+        ;; send the last message before cleanup
+        new-current (tap-reducer current human-status-msg)]
+
+    ;; call cleanup on the embeds
+    (assoc new-current
+           :stats (tap-reducer-cleanup (:stats new-current))
+           :string-writer (tap-reducer-cleanup (:string-writer new-current)))))
 
 

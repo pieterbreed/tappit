@@ -1,6 +1,6 @@
 (ns tappit.producer-test
-  (:require [clojure.test :refer :all]
-            [tappit.producer :refer :all]
+  (:require [tappit.producer :refer :all]
+            [clojure.test :refer :all]
             [clojure.string :as str]
             [clojure.test.check :as tc]
             [clojure.test.check.generators :as tcgen]
