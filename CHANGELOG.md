@@ -3,13 +3,14 @@ All notable changes to this project will be documented in this file. This change
 
 ## Planned
 ### Changed
-- multi-method/reduce-based implementation for the tap producer
+- Change `tappit.producer/with-tap!` to use the `tappit.reducer` api instead of the complected `*out*` and `atom`-based implementation I started with.
 
 ## [Unreleased]
+### Changed
+- `tappit.reducer` - multi-method/reduce-based implementation for the tap producer
 
 ## [0.9.6] - 2016-09-05
 ### Added
-- generative testing harness for acceptance testing
 - travis ci
 ### Changed
 - protocol based api for the leaky defmacro `with-tap!`

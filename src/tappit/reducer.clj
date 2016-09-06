@@ -291,8 +291,6 @@
 
 ;; ----------------------------------------
 
-;; ----------------------------------------
-
 (defn make-commenting-reducer
   "Creates a tap-reducer that embeds both a string-writer-reducer and a stat-aggregating reducer. It uses the stats to provide extra comments to humans after the string-writer is done. eg \"# All good!\" at the end of the stream."
   [w]
