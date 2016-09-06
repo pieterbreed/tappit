@@ -17,6 +17,7 @@
                                :type :ok2} :a :b :c :d))))
 
 ;; ----------------------------------------
+;; testing the fns that create valid 'lines'
 
 (defn specced-fn-passes-check
   "Utility function to check that tests pass"
@@ -33,9 +34,8 @@
   (is (specced-fn-passes-check 'tappit.reducer/plan))
   (is (specced-fn-passes-check 'tappit.reducer/test-line)))
 
-
-
 ;; ----------------------------------------
+;; testing the combinator reducer
 
 (defn create-test-tap-reducer [n]
   "Creates a combinator reducer that has n ::tap-reducer-combinator-tests's combined in it. These are dumb reducers, not caring what actual message they receive, just counting them as they go by."
@@ -80,31 +80,121 @@
 
 ;; ----------------------------------------
 
-(defn test-for-n-occurences-of-regex-in-string
+(defn count-nr-of-occurences-of-regex-in-string
   "Tests whether txt contains exactly n repititions of the regex. 
 
-  (You _probably_ want to use the 2-argument overload.)"
+  (You _probably_ want to use the 2-argument overload.)
+
+  eg: (count-nr-of-occurences-of-regex-in-string
+          #\"(?m)^# 1$\"
+          \"nonsenseline\\n# 1\\n# 1\\nmore nonsense\")
+     -> 2
+  "
   ([matcher counter dontcallthisoverload]
    (if (re-find matcher) (recur matcher (inc counter) nil)
        counter))
   ([r txt]
-   (test-for-n-occurences-of-regex-in-string (re-matcher r txt) 0 nil)))
+   (count-nr-of-occurences-of-regex-in-string (re-matcher r txt) 0 nil)))
 
-(deftest test-for-n-occurences-of-regex-in-string-works
-  (is (= 0 (test-for-n-occurences-of-regex-in-string #"\d" "aabbcc")))
-  (is (= 1 (test-for-n-occurences-of-regex-in-string #"\d" "aaabb1cccdd")))
-  (is (= 3 (test-for-n-occurences-of-regex-in-string #"(?m)^# line$"
-                                                     "not this line\n# line\nnot this one either\n# line\n# line"))))
+;; this is a test so that the utility testing fn works properly
+(deftest count-nr-of-occurences-of-regex-in-string-works
+  (is (= 0 (count-nr-of-occurences-of-regex-in-string
+            #"\d" "aabbcc")))
+  (is (= 1 (count-nr-of-occurences-of-regex-in-string
+            #"\d" "aaabb1cccdd")))
+  (is (= 3 (count-nr-of-occurences-of-regex-in-string
+            #"(?m)^# line$"
+            "not this line\n# line\nnot this one either\n# line\n# line"))))
 
 ;; ----------------------------------------
+;; testing make-string-writer-reducer
+
+(defn make-n-ok-lines
+  [n-oks]
+  (for [i (range 1 (inc n-oks))]
+    (test-line :ok i (str "okname" i))))
+;; (make-n-ok-lines 1)
+
+(defn make-not-ok-lines
+  [n-not-oks]
+  (for [i (range 1 (inc n-not-oks))]
+    (test-line :not-ok i (str "notokname" i))))
+;; (make-not-ok-lines 2)
+
+(defn make-ok-skip-lines
+  [n-oks-skip]
+  (for [i (range 1 (inc n-oks-skip))]
+    (test-line :ok
+               i (str "skipname" i)
+               :skip (str "skipname" i))))
+;; (make-ok-skip-lines 1)
+
+(defn make-not-ok-todo-lines
+  [n-not-oks-todo]
+  (for [i (range 1 (inc n-not-oks-todo))]
+    (test-line :not-ok
+               i (str "todoname" i)
+               :todo (str "todoname" i))))
+;; (make-not-ok-todo-lines 3)
+
+(defn make-diag-lines
+  [n-diags]
+  (for [i (range 1 (inc n-diags))]
+    (diag (str "diag" i))))
+;; (make-diag-lines 3)
+
+(defn make-random-document
+  [n-oks
+   n-not-oks
+   n-oks-skip
+   n-not-oks-todo
+   n-diags]
+  (let [ok-lines           (make-n-ok-lines n-oks)
+        not-ok-lines       (make-not-ok-lines n-not-oks)
+        ok-skip-lines      (make-ok-skip-lines n-oks-skip)
+        not-ok-todo-lines  (make-not-ok-todo-lines n-not-oks-todo)
+        diag-lines         (make-diag-lines n-diags)
+
+        scrambled-all-lines (shuffle 
+                             (concat ok-lines
+                                     not-ok-lines
+                                     ok-skip-lines
+                                     not-ok-todo-lines
+                                     diag-lines))
+        w (java.io.StringWriter.)
+        string-tap-reducer (make-string-writer-reducer
+                            w)]
+    (do (reduce tap-reducer string-tap-reducer scrambled-all-lines)
+        (.toString w))))
+;; (make-random-document 1 1 1 1 1)
 
 (tct/defspec stringwriter-reducer-produces-all-the-lines-1
   1000
   (tcprop/for-all
-   [noks tcgen/pos-int         ;; ok 1 okname\d+
-    nnotoks tcgen/pos-int      ;; not ok 1 notokname\d+
-    noks_skip tcgen/pos-int    ;; ok 1 skipname\d+ # SKIP skipname\d
-    nnotoks_todo tcgen/pos-int ;; not ok 1 todoname\d+ # TODO todoname\d+
-    ndiags tcgen/pos-int]      ;; # diag\d+
-   true))
+   [n-oks tcgen/pos-int          ;; ok \d+ okname\d+
+    n-not-oks tcgen/pos-int      ;; not ok \d+ notokname\d+
+    n-oks-skip tcgen/pos-int     ;; ok \d+ skipname\d+ # SKIP skipname\d
+    n-not-oks-todo tcgen/pos-int ;; not ok \d+ todoname\d+ # TODO todoname\d+
+    n-diags tcgen/pos-int]       ;; # diag\d+
+   
+   (let [random-document (make-random-document n-oks
+                                               n-not-oks
+                                               n-oks-skip
+                                               n-not-oks-todo
+                                               n-diags)]
+     (and (= n-oks (count-nr-of-occurences-of-regex-in-string
+                    #"(?m)ok \d+ okname\d+"
+                    random-document))
+          (= n-not-oks (count-nr-of-occurences-of-regex-in-string
+                        #"(?m)not ok \d+ notokname\d+"
+                        random-document))
+          (= n-oks-skip (count-nr-of-occurences-of-regex-in-string
+                         #"(?m)ok \d+ skipname\d+ # SKIP skipname\d+"
+                         random-document))
+          (= n-not-oks-todo (count-nr-of-occurences-of-regex-in-string
+                             #"(?m)not ok \d+ todoname\d+ # TODO todoname\d+"
+                             random-document))
+          (= n-diags (count-nr-of-occurences-of-regex-in-string
+                      #"(?m)# diag\d+"
+                      random-document))))))
    

@@ -109,6 +109,8 @@
         deets (:detail args)
         diag (:inline-diagnostics args)]
 
+    (assert (not (nil? args)))
+
     ;; ok-ness is required, so start with that
     (as-> {::ok-ness (:ok-ness args)} $
 
@@ -175,8 +177,11 @@
        :tests 0
        :writer w})
 
-(defn -get-string-writer-test-part [deets]
-  (let [status-part (condp = (::ok-ness deets)
+(defn -make-test-line
+  [line]
+  
+  (let [deets (::detail line)
+        status-part (condp = (::ok-ness line)
                       :ok "ok"
                       :not-ok "not ok")
         counter-part (if (nil? (-> deets ::test-nr))
@@ -187,17 +192,17 @@
                     ""
                     (str " "
                          (::name deets)))
-        diag-part (if (nil? (::diagnostics deets))
+        diag-part (if (nil? (::inline-diagnostics line))
                     ""
                     (str " #"
-                         (condp = (-> deets
-                                      ::diagnostics
-                                      ::diagnostics-type)
+                         (condp = (-> line
+                                      ::inline-diagnostics
+                                      ::inline-diagnostics-type)
                            :skip " SKIP"
                            :todo " TODO"
                            :diag "")
-                         (let [msg (-> deets
-                                       ::diagnostics
+                         (let [msg (-> line
+                                       ::inline-diagnostics
                                        ::diagnostics-msg)]
                            (if (empty? msg) ""
                                (str " " msg)))))]
@@ -235,7 +240,7 @@
                 (assoc current
                        :planned true))
         :test (do
-                (.write w (str (-get-string-writer-test-part deets)
+                (.write w (str (-make-test-line deets)
                                \newline))
                 (update-in current [:tests] inc))))))
 
