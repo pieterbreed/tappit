@@ -31,18 +31,23 @@
   [current]
   (update-in current [:cleaned-up] inc))
 
-(tct/defspec combinator-reducer-call-everything-it-should
+(tct/defspec combinator-reducer-calls-everything-it-should
   1000
   (tcprop/for-all
    [vint (tcgen/vector tcgen/int)]
    (let [n (count vint)
 
-         ;; send n fake messages to n fake reducers and do a cleanup
+         ;; send n fake messages to n fake reducers
+         ;; (through the combinator)
+         ;; and then do a cleanup
          r (as-> (create-test-tap-reducer n) $
              (reduce tap-reducer $ vint)
              (tap-reducer-cleanup $))]
 
-     ;; tests the n messages were passed through and that cleanup was called once
+     ;; when used as a reducer (on a list of test reducers... lol)
+     ;; Tests that:
+     ;; - all n messages were passed to it
+     ;; - and that cleanup was called once
      (letfn [(failure-counter
                [current-failed next]
                (if (and (= n (:events next))
@@ -50,5 +55,25 @@
                  current-failed
                  (inc current-failed)))]
        (= 0 (reduce failure-counter 0 (:reducers r)))))))
+
+;; ----------------------------------------
+
+(defn test-for-n-occurences-of-regex-in-string
+  "Tests whether txt contains exactly n repititions of the regex. 
+
+  (You _probably_ want to use the 2-argument overload.)"
+  ([matcher counter dontcallthisoverload]
+   (if (re-find matcher) (recur matcher (inc counter) nil)
+       counter))
+  ([r txt]
+   (test-for-n-occurences-of-regex-in-string (re-matcher r txt) 0 nil)))
+
+(deftest test-for-n-occurences-of-regex-in-string-works
+  (is (= 0 (test-for-n-occurences-of-regex-in-string #"\d" "aabbcc")))
+  (is (= 1 (test-for-n-occurences-of-regex-in-string #"\d" "aaabb1cccdd")))
+  (is (= 3 (test-for-n-occurences-of-regex-in-string #"(?m)^# line$"
+                                                     "not this line\n# line\nnot this one either\n# line\n# line"))))
+
+;; ----------------------------------------
 
 
