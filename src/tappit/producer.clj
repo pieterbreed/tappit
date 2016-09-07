@@ -90,206 +90,41 @@
 ;; ----------------------------------------
 
 (defonce ok :ok)
-(defonce not-ok (not ok))
-
-(def ->diag)
-(def -bailed?)
-
-(defn ->ok
-  [{last-action :last-action
-    oks :oks
-    counter :counter
-    :as current
-    :or {oks 0
-         counter 0}}
-   thing
-   & {name :name
-      todo :todo
-      diag :diag
-      skip :skip
-      :or {name ""
-           todo nil
-           skip nil
-           diag nil}}]
-  (if (-bailed? current)
-    current
-    (let [new (assoc current
-                     :oks (if thing (inc oks) oks)
-                     :counter (inc counter)
-                     :last-action :->ok)]
-      (print (str (if (= last-action :->ok)
-                    "\n"
-                    "")
-                  (if thing
-                    "ok"
-                    "not ok")
-                  " " (:counter new)
-                  (if (< 0 (count name)) (str " - " name))))
-
-      (cond
-        (not (nil? skip))
-        (->diag new (str "SKIP " skip))
-
-        (not (nil? todo))
-        (->diag new (str "TODO "
-                         todo))
-
-        (not (nil? diag))
-        (->diag new (str diag))
-
-        true new))))
-
-(defn ->plan-for
-  [{:as current
-    last-action :last-action}
-   n]
-  (if (-bailed? current)
-    current
-    (do 
-      (if (= last-action
-             :->ok)
-        (println))
-      (println (str "1.." n))
-      (assoc current
-             :planned-for n
-             :last-action :->plan-for))))
-
-(defn ->diag [{last-action :last-action
-               diags :diags
-               :as current}
-              msg]
-
-  (if (-bailed? current)
-    current
-    (do 
-      (println (str (if (= last-action
-                           :->ok)
-                      " "
-                      "")
-                    (str "# " msg)))
-
-      (assoc current
-             :last-action :->diag
-             :diags (if diags (inc diags)
-                        1)))))
-
-
-(defn ->bail-out
-  [{:as current
-    last-action :last-action}
-   msg]
-  (if (-bailed? current)
-    current
-    (do 
-      (if (= last-action :->ok) (println))
-      (println (str "Bail out! " msg))
-      (assoc current
-             :bailed true
-             :last-action :->bail-out))))
-
-(defn -bailed?
-  [current]
-  (:bailed current))
-
-(defn ->bailed?
-  [t]
-  (-bailed? @t))
-
-(defn ->not-bailed?
-  [t]
-  (not (->bailed? t)))
-
-(defn ->cleanup
-  [{:keys [last-action
-           planned-for
-           counter
-           oks]
-    :as current}]
-
-  (as-> current $
-    (->diag $ "")
-    (->diag $ "----------------------------------------")
-    (if (nil? planned-for)
-      (do 
-        (->plan-for $ counter)
-        (if (= counter oks)
-          (->diag $ "All good")
-          (->diag $ (str "You did "
-                         counter
-                         " and had "
-                         oks
-                         " oks."))
-          ))
-      (do 
-        (if (= planned-for counter oks)
-          (->diag $ "All good")
-          (->diag $ (str "You planned "
-                         planned-for
-                         ", did "
-                         counter
-                         " and had "
-                         oks
-                         " oks.")))))))
-
 
 ;; ----------------------------------------
 
-(defn ->ok!
-  [t thing & rst]
-
-  (if (string? (first rst))
-    (apply ->ok! t thing :name (first rst) (rest rst))
-    (apply swap! t ->ok thing rst))
-  
-  ok)
-
-(defn ->=!
-  [t thing1 thing2 & rst]
-  (apply ->ok! t (= thing1 thing2) rst))
-
-(defn ->isa!
-  [t thing pred & rst]
-  (apply ->ok! t (pred thing) rst))
-
-(defn ->plan-for!
-  [t n & _]
-  (swap! t ->plan-for n)
-  ok)
-
-(defn ->diag!
-  [t msg]
-  (swap! t ->diag msg)
-  ok)
-
-(defn ->bail-out!
-  [t msg]
-  (swap! t ->bail-out msg)
-  ok)
-
-(defn ->cleanup!
+(defn -OK!
   [t]
-  (swap! t ->cleanup)
-  ok)
+  (if (boolean t) :ok :not-ok))
 
-;; ----------------------------------------
-
-(defn create-atom-tap-producer
+(defn create-atom-reducer-tap-producer
+  "Creates a tap-producing API, but using the tappit.reducer api"
   []
-  (let [a (atom {})]
+  (let [aa (atom (tr/make-commenting-reducer *out*))
+        ! (fn [item] (swap! aa tr/tap-reducer item))]
     (reify Producer
-      (plan-for! [_ n] (->plan-for! a n))
-      (diag! [_ msg] (->diag! a msg))
-      (bail-out! [_ msg] (->bail-out! a msg))
-      (done! [_] (->cleanup! a))
+      (plan-for! [_ n]   (! (tr/plan n)))
+      (diag!     [_ msg] (! (tr/diag msg)))
+      (bail-out! [_ msg] (! (tr/bail msg)))
+      (done!     [_]     (swap! aa tr/tap-reducer-cleanup))
 
-      (bailed? [_] (->bailed? a))
-      (not-bailed? [_] (->not-bailed? a))
+      (bailed? [_] (tr/bailed? @aa))
+      (not-bailed? [_] (not (tr/bailed? @aa)))
 
-      (ok! [_] (->ok! a true))
-      (ok! [_ thing] (->ok! a thing))
-      (ok! [_ thing name] (->ok! a thing name))
-      (ok! [_ thing flag value] (->ok! a thing flag value))
-      (ok! [_ thing name flag value] (->ok! a thing name flag value))
+      (ok! [_]
+        (! (tr/test-line :ok :auto)))
+      (ok! [_ thing]
+        (! (tr/test-line (-OK! thing) :auto "")))
+      (ok! [_ thing name]
+        (! (tr/test-line (-OK! thing) :auto name)))
+      (ok! [_ thing flag value]
+        (! (tr/test-line (-OK! thing)
+                         :auto ""
+                         flag value)))
+      (ok! [_ thing name flag value]
+        (! (tr/test-line (-OK! thing)
+                         :auto name
+                         flag value)))
 
       (isa! [_ thing pred] (->isa! a thing pred))
       (isa! [_ thing pred name] (->isa! a thing pred name))
@@ -300,38 +135,6 @@
       (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
       (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
       (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
-
-;; ----------------------------------------
-
-;; (defn create-atom-reducer-tap-producer
-;;   "Creates a tap-producing API, but using the tappit.reducer api"
-;;   []
-;;   (let [aa (atom (tr/make-commenting-reducer *out*))
-;;         ! (fn [item] (swap! a tr/tap-reducer item))]
-;;     (reify Producer
-;;       (plan-for! [_ n]   (! (tr/plan n)))
-;;       (diag!     [_ msg] (! (tr/diag msg)))
-;;       (bail-out! [_ msg] (! (tr/bail msg)))
-;;       (done!     [_]     (swap! aa tap-reducer-cleanup))
-
-;;       (bailed? [_] (->bailed? a))
-;;       (not-bailed? [_] (->not-bailed? a))
-
-;;       (ok! [_] (->ok! a true))
-;;       (ok! [_ thing] (->ok! a thing))
-;;       (ok! [_ thing name] (->ok! a thing name))
-;;       (ok! [_ thing flag value] (->ok! a thing flag value))
-;;       (ok! [_ thing name flag value] (->ok! a thing name flag value))
-
-;;       (isa! [_ thing pred] (->isa! a thing pred))
-;;       (isa! [_ thing pred name] (->isa! a thing pred name))
-;;       (isa! [_ thing pred flag value] (->isa! a thing pred flag value))
-;;       (isa! [_ thing pred name flag value] (->isa! a thing pred name flag value))
-
-;;       (=! [_ thing1 thing2] (->=! a thing1 thing2))
-;;       (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
-;;       (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
-;;       (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
 
 ;; ----------------------------------------
 

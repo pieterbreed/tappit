@@ -3,9 +3,11 @@
 
 ;; ----------------------------------------
 
+(s/def ::auto #{:auto})
 (s/def ::ok-ness #{:ok :not-ok})
 (s/def ::name string?)
-(s/def ::test-nr pos-int?)
+(s/def ::test-nr (s/or :int pos-int?
+                       :auto ::auto))
 (s/def ::detail (s/keys :opt [::name ::test-nr]))
 
 (s/def ::diagnostics-msg string?)
@@ -92,8 +94,9 @@
                (-> % :args :ok-ness))
             (= (-> % :ret ::detail ::name)
                (-> % :args :detail :name))
-            (= (-> % :ret ::detail ::test-nr)
-               (-> % :args :detail :test-nr))
+            (or (= ::auto (-> % :args :detail ::test-nr))
+                (= (-> % :ret ::detail ::test-nr)
+                   (-> % :args :detail :test-nr)))
             (= (-> % :ret ::inline-diagnostics ::inline-diagnostics-type)
                (-> % :args :inline-diagnostics :diag-type))
             (= (-> % :ret ::inline-diagnostics ::diagnostics-msg)
@@ -102,10 +105,19 @@
 (defn test-line
   "Makes a test data item.
 
-  eg: (test-line :ok :diag \"diagnostics example message\")
+  eg: (test-line :ok) ;; bad style, but possible
+      (test-line :not-ok) ;; so is this...
+      (test-line :ok :diag \"diagnostics example message\") ;; same thing
+
+      ;; the problem with the previous examples is that they don't contai
+      ;; test numbers or test names. this is better:
       (test-line :not-ok 2 \"test name\")
-      (test-line :ok 3 \"test name\" :skip \"SKIP diagnostics message\") 
-      etc
+
+      ;; a test-line may also have one of :skip :diag or :todo
+      (test-line :ok 3 \"test name\" :skip \"diagnostics message that starts with SKIP\") 
+      
+      ;; lastly
+      (test-line :ok :auto \"test name\") ;; also works for me...
 
   in general: (test-line (one-of #{:ok :not-ok})
                          (? test-nr-int 
@@ -149,6 +161,12 @@
 
 ;; default cleanup does nothing (for now)
 (defmethod tap-reducer-cleanup :default [current] current)
+
+(defmulti bailed?
+  "Have we bailed yet?"
+  -type-of-first)
+
+(defmethod bailed? :default [current] (:bailed current))
 
 ;; ----------------------------------------
 
@@ -250,8 +268,12 @@
                 (assoc current
                        :planned true))
         :test (do
-                (.write w (str (-make-test-line deets)
-                               \newline))
+                (let [test-nr (if (= :auto (-> deets ::test-nr))
+                                (inc (:tests current))
+                                (-> deets ::test-nr))
+                      deets (assoc deets ::test-nr test-nr)]
+                  (.write w (str (-make-test-line deets)
+                                 \newline)))
                 (update-in current [:tests] inc))))))
 
 (defmethod tap-reducer-cleanup ::->java.io.Writer
