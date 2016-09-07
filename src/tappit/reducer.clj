@@ -301,7 +301,7 @@
           op        (first line)
           deets (second line)]
       (condp = op
-        :bail (update-in current [:bailed] (::bail-out deets))
+        :bail (assoc current :bailed (::bail-out deets))
         :diag (update-in current [:nr-diags] inc)
         :plan (assoc current :planned-for (::plan-nr deets))
         :test (let [test-line (s/conform ::test-line deets)
