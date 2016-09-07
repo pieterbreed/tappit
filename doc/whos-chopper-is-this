@@ -1,0 +1,69 @@
+#!/usr/bin/env boot
+
+(set-env! :dependencies '[[pieterbreed/tappit "0.9.8-SNAPSHOT"]
+                          [environ "1.0.3"]])
+(require '[tappit.producer :refer [with-tap! ok]])
+(require 'environ.core)
+(require '[clojure.string :as str])
+
+;; this is what the user has to set,
+;; USING ENVIRONMENT VARS,
+;; to prove they are alive...
+;; (and can be taught...)
+;; https://github.com/weavejester/environ
+(def I (some->> (environ.core/env :i) ;; <-- is-I-ok? HERE! don't miss it now
+                (re-find #"\d+")      ;; There is more ^^^^^^ higher up.
+                (Integer.)))
+
+(with-tap!
+  (when (not I)
+    (let [lines [(str "# Hello " (environ.core/env :user))
+                 ""
+                 "> Whose motorcycle is this?"
+                 ""
+                 "> It's a chopper, baby."
+                 ""
+                 "> Whose chopper is this?"
+                 ""
+                 "> Zed's."
+                 ""
+                 "> Who's Zed?"
+                 ""
+                 "..."]]
+      (dorun
+       (map diag! lines))))
+
+  (ok! ok "i-am-alive" :todo "# prove it! (HINT: grep the source code for the test name...)")
+
+  (when (not I)
+    (diag! "")
+    (diag! "")
+    (diag! "In bash, try: `cat $(which whos-chopper-is-this) | grep -A 7 is-I-ok`")
+    (diag! "")
+    (diag! ""))
+
+  (ok! I "is-I-ok?" :diag "In bash, try: `i=<n> whos-chopper-is-this`")
+
+  (when (not I)
+    (diag! "")
+    (diag! ""))
+  (if
+      (not I) (do
+                (diag! "Nope. You failed. Try again.")
+                (bail-out! "[Zed's dead, baby. Zed's dead.](https://www.youtube.com/watch?v=7Y_NU_OUwvk)"))
+      (do 
+        (ok! I "think-I-am-ok!" :diag (str "I == " I))
+        
+        ;;(isa! I #(not (= 1 %))) "not-=-1" :diag "? Try a little higher than 'one'..."
+        (isa! I #(not (= 1 %)) "not-=-1" :diag "? Try a little higher than 'one'...")
+        
+        (diag! "not TOO crazy though. This script will be called recursively")
+        
+        ;; management information
+        (ok! ok "I-am->"
+             :diag (. (java.lang.management.ManagementFactory/getRuntimeMXBean)
+                      getName))
+
+        (ok! ok "last-hint" :diag "In bash, try: whos-chopper-is-this | grep \"not ok\""))))
+
+
