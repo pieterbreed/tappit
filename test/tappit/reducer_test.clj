@@ -54,7 +54,7 @@
   (update-in current [:cleaned-up] inc))
 
 (tct/defspec combinator-reducer-calls-everything-it-should
-  1000
+  100
   (tcprop/for-all
    [vint (tcgen/vector tcgen/int)]
    (let [n (count vint)
@@ -182,7 +182,7 @@
 ;; (make-random-document 1 1 1 1 1)
 
 (tct/defspec stringwriter-reducer-produces-all-the-lines-1
-  1000
+  100
   (tcprop/for-all
    [n-oks tcgen/pos-int          ;; ok \d+ okname\d+
     n-not-oks tcgen/pos-int      ;; not ok \d+ notokname\d+
@@ -231,7 +231,7 @@
              ll))))
 
 (tct/defspec stats-aggregation-reducer-produces-sane-stats
-  1000
+  100
   (tcprop/for-all
    [n-oks tcgen/pos-int
     n-not-oks tcgen/pos-int
