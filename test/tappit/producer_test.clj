@@ -11,7 +11,7 @@
 ;; these are all high-level, client-api tests
 
 (tct/defspec all-ok-statements-accounted-for-1
-  1000
+  100
   (tcprop/for-all
    [x tcgen/s-pos-int]
    (let [output (with-out-str
@@ -29,7 +29,7 @@
         (= 0 $))))))
 
 (tct/defspec inline-diags-accounted-for-1
-  1000
+  100
   (tcprop/for-all
    [x tcgen/s-pos-int]
    (let [output (with-out-str
@@ -47,7 +47,7 @@
             (= 0 $))))))
 
 (tct/defspec nextline-diags-accounted-for-todos-Allgood-1
-  1000
+  100
   (tcprop/for-all
    [x tcgen/s-pos-int]
    (let [output (with-out-str
