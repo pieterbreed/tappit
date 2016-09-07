@@ -3,11 +3,9 @@
 
 ;; ----------------------------------------
 
-(s/def ::auto #{:auto})
 (s/def ::ok-ness #{:ok :not-ok})
 (s/def ::name string?)
-(s/def ::test-nr (s/or :int pos-int?
-                       :auto ::auto))
+(s/def ::test-nr pos-int?)
 (s/def ::detail (s/keys :opt [::name ::test-nr]))
 
 (s/def ::diagnostics-msg string?)
@@ -80,7 +78,7 @@
 
 ;; --------------------
 
-(s/def ::test-arg-spec
+(s/def ::test-line-arguments-spec
   (s/cat :ok-ness ::ok-ness
          :detail (s/? (s/cat :test-nr ::test-nr
                              :name ::name))
@@ -88,15 +86,14 @@
                               (s/cat :diag-type ::inline-diagnostics-type
                                      :diag-msg ::diagnostics-msg))))
 (s/fdef test-line
-  :args ::test-arg-spec
+  :args ::test-line-arguments-spec
   :ret ::test-line
   :fn #(and (= (-> % :ret ::ok-ness)
                (-> % :args :ok-ness))
             (= (-> % :ret ::detail ::name)
                (-> % :args :detail :name))
-            (or (= ::auto (-> % :args :detail ::test-nr))
-                (= (-> % :ret ::detail ::test-nr)
-                   (-> % :args :detail :test-nr)))
+            (= (-> % :ret ::detail ::test-nr)
+               (-> % :args :detail :test-nr))
             (= (-> % :ret ::inline-diagnostics ::inline-diagnostics-type)
                (-> % :args :inline-diagnostics :diag-type))
             (= (-> % :ret ::inline-diagnostics ::diagnostics-msg)
@@ -116,8 +113,6 @@
       ;; a test-line may also have one of :skip :diag or :todo
       (test-line :ok 3 \"test name\" :skip \"diagnostics message that starts with SKIP\") 
       
-      ;; lastly
-      (test-line :ok :auto \"test name\") ;; also works for me...
 
   in general: (test-line (one-of #{:ok :not-ok})
                          (? test-nr-int 
@@ -126,7 +121,7 @@
                             diagnostics-msg-string))
   "
   [& rst]
-  (let [args (s/conform ::test-arg-spec rst)
+  (let [args (s/conform ::test-line-arguments-spec rst)
         deets (:detail args)
         diag (:inline-diagnostics args)]
 
@@ -265,15 +260,10 @@
         :plan (do
                 (.write w (str "1.." (::plan-nr deets)
                                \newline))
-                (assoc current
-                       :planned true))
+                (assoc current :planned true))
         :test (do
-                (let [test-nr (if (= :auto (-> deets ::test-nr))
-                                (inc (:tests current))
-                                (-> deets ::test-nr))
-                      deets (assoc deets ::test-nr test-nr)]
-                  (.write w (str (-make-test-line deets)
-                                 \newline)))
+                (.write w (str (-make-test-line deets)
+                               \newline))
                 (update-in current [:tests] inc))))))
 
 (defmethod tap-reducer-cleanup ::->java.io.Writer

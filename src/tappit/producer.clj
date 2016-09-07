@@ -101,7 +101,9 @@
   "Creates a tap-producing API, but using the tappit.reducer api"
   []
   (let [aa (atom (tr/make-commenting-reducer *out*))
-        ! (fn [item] (swap! aa tr/tap-reducer item))]
+        ! (fn [item] (swap! aa tr/tap-reducer item))
+        get-test-nr (let [counter (atom 0)]
+                      (fn [] (swap! counter inc)))]
     (reify Producer
       (plan-for! [_ n]   (! (tr/plan n)))
       (diag!     [_ msg] (! (tr/diag msg)))
@@ -111,37 +113,84 @@
       (bailed? [_] (tr/bailed? @aa))
       (not-bailed? [_] (not (tr/bailed? @aa)))
 
+      ;; --------------------
+      ;; ok!
+      
       (ok! [_]
-        (! (tr/test-line :ok :auto)))
+        (! (tr/test-line :ok
+                         (get-test-nr))))
       (ok! [_ thing]
-        (! (tr/test-line (-OK! thing) :auto "")))
+        (! (tr/test-line (-OK! thing)
+                         (get-test-nr)
+                         "")))
       (ok! [_ thing name]
-        (! (tr/test-line (-OK! thing) :auto name)))
+        (! (tr/test-line (-OK! thing)
+                         (get-test-nr)
+                         name)))
       (ok! [_ thing flag value]
         (! (tr/test-line (-OK! thing)
-                         :auto ""
-                         flag value)))
+                         (get-test-nr)
+                         ""
+                         flag
+                         value)))
       (ok! [_ thing name flag value]
         (! (tr/test-line (-OK! thing)
-                         :auto name
-                         flag value)))
+                         (get-test-nr)
+                         name
+                         flag
+                         value)))
 
-      (isa! [_ thing pred] (->isa! a thing pred))
-      (isa! [_ thing pred name] (->isa! a thing pred name))
-      (isa! [_ thing pred flag value] (->isa! a thing pred flag value))
-      (isa! [_ thing pred name flag value] (->isa! a thing pred name flag value))
+      ;; --------------------
+      ;; isa!
+      
+      (isa! [_ thing pred]
+        (! (tr/test-line (-OK! (pred thing))
+                         (get-test-nr))))
+      (isa! [_ thing pred name]
+        (! (tr/test-line (-OK! (pred thing))
+                         (get-test-nr)
+                         name)))
+      (isa! [_ thing pred flag value]
+        (! (tr/test-line (-OK! (pred thing))
+                         (get-test-nr)
+                         ""
+                         flag
+                         value)))
+      (isa! [_ thing pred name flag value]
+        (! (tr/test-line (-OK! (pred thing))
+                         (get-test-nr)
+                         name
+                         flag
+                         value)))
 
-      (=! [_ thing1 thing2] (->=! a thing1 thing2))
-      (=! [_ thing1 thing2 name] (->=! a thing1 thing2 name))
-      (=! [_ thing1 thing2 flag value] (->=! a thing1 thing2 flag value))
-      (=! [_ thing1 thing2 name flag value] (->=! a thing1 thing2 name flag value)))))
+      ;; --------------------
+      ;; =!
+      (=! [_ thing1 thing2]
+        (! (tr/test-line (-OK! (= thing1 thing2))
+                         (get-test-nr))))
+      (=! [_ thing1 thing2 name]
+        (! (tr/test-line (-OK! (= thing1 thing2)
+                               (get-test-nr)
+                               name))))
+      (=! [_ thing1 thing2 flag value]
+        (! (tr/test-line (-OK! (= thing1 thing2)
+                               (get-test-nr)
+                               ""
+                               flag
+                               value))))
+      (=! [_ thing1 thing2 name flag value]
+        (! (tr/test-line (-OK! (= thing1 thing2)
+                               (get-test-nr)
+                               name
+                               flag
+                               value)))))))
 
 ;; ----------------------------------------
 
 
 (defmacro with-tap!
   [& body]
-  `(let [tap# (create-atom-tap-producer)
+  `(let [tap# (create-atom-reducer-tap-producer)
          ~'ok! (fn [& rst#] (apply ok! tap# rst#))
          ~'isa! (fn [& rst#] (apply isa! tap# rst#))
          ~'plan-for! (fn [& rst#] (apply plan-for! tap# rst#))
