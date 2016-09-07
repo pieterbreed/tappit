@@ -9,9 +9,11 @@ All notable changes to this project will be documented in this file. This change
 ## [Unreleased]
 
 ## [0.9.7] - 2016-09-07
+
 ### Changed
 - `tappit.reducer` - multi-method/reduce-based implementation for the tap producer
 - Change `tappit.producer!` to use the `tappit.reducer` api instead of the complected `*out*` and `atom`-based implementation I started with.
+- BREAKING! `[org.clojure/clojure "1.9.0-alpha10"]`
 
 ## [0.9.6] - 2016-09-05
 ### Added
