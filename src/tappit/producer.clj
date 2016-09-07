@@ -118,7 +118,8 @@
       
       (ok! [_]
         (! (tr/test-line :ok
-                         (get-test-nr))))
+                         (get-test-nr)
+                         "")))
       (ok! [_ thing]
         (! (tr/test-line (-OK! thing)
                          (get-test-nr)
@@ -145,7 +146,8 @@
       
       (isa! [_ thing pred]
         (! (tr/test-line (-OK! (pred thing))
-                         (get-test-nr))))
+                         (get-test-nr)
+                         "")))
       (isa! [_ thing pred name]
         (! (tr/test-line (-OK! (pred thing))
                          (get-test-nr)
@@ -167,23 +169,24 @@
       ;; =!
       (=! [_ thing1 thing2]
         (! (tr/test-line (-OK! (= thing1 thing2))
-                         (get-test-nr))))
+                         (get-test-nr)
+                         "")))
       (=! [_ thing1 thing2 name]
-        (! (tr/test-line (-OK! (= thing1 thing2)
-                               (get-test-nr)
-                               name))))
+        (! (tr/test-line (-OK! (= thing1 thing2))
+                         (get-test-nr)
+                         name)))
       (=! [_ thing1 thing2 flag value]
-        (! (tr/test-line (-OK! (= thing1 thing2)
-                               (get-test-nr)
-                               ""
-                               flag
-                               value))))
+        (! (tr/test-line (-OK! (= thing1 thing2))
+                         (get-test-nr)
+                         ""
+                         flag
+                         value)))
       (=! [_ thing1 thing2 name flag value]
-        (! (tr/test-line (-OK! (= thing1 thing2)
-                               (get-test-nr)
-                               name
-                               flag
-                               value)))))))
+        (! (tr/test-line (-OK! (= thing1 thing2))
+                         (get-test-nr)
+                         name
+                         flag
+                         value))))))
 
 ;; ----------------------------------------
 

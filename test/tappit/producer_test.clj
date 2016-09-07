@@ -7,43 +7,8 @@
             [clojure.test.check.properties :as tcprop]
             [clojure.test.check.clojure-test :as tct]))
 
-(deftest diag-test
-  (let [t (atom {})
-        out (with-out-str 
-              (->diag! t "testing"))]
-    (is (re-find #"# testing"
-                 out))))
-;; (diag-test)
-
-(deftest no-name-ok-test
-  (let [t (atom {})
-        out (with-out-str
-              (->ok! t 1))]
-    (is (re-find #"ok 1"
-                 out))))
-;; (no-name-ok-test)
-
-(deftest named-ok-test
-  (let [t (atom {})]
-    (let [out (with-out-str
-                (->ok! t 1 "everything is ok"))]
-      (is (re-find #"ok 1 - everything is ok" out)))
-    (let [out (with-out-str
-                (->ok! t 1 "still ok"))]
-      (is (re-find #"ok 2 - still ok"
-                   out)))))
-;; (named-ok-test)
-
-(deftest no-name-not-ok-test
-  (let [t (atom {})]
-    (let [out (with-out-str
-                (->ok! t false "always fails"))]
-      (is (re-find #"not ok 1 - always fails"
-                   out)))))
-;; (no-name-not-ok-test)
-
-
 ;; ----------------------------------------
+;; these are all high-level, client-api tests
 
 (tct/defspec all-ok-statements-accounted-for-1
   1000
@@ -71,8 +36,7 @@
                   (with-tap!
                     (dorun (for [x (range x)]
                              (do
-                               (ok! x)
-                               (diag! (str x)))))))]
+                               (ok! x :diag (str x)))))))]
      (and (re-find (re-pattern (str "1.." x)) output)
           (as-> x $
             (for [i (range 1 x)]
@@ -114,7 +78,7 @@
                     (dorun (for [x (range x)]
                              (do
                                (ok! x (str "name" x))
-                               (ok! x :name (str "name" x))
+                               (ok! x (str "name" x))
                                (ok! x (str "name" x) :diag (str "diag" x))
                                (ok! x (str "name" x) :skip (str "skip" x))
                                (ok! x (str "name" x) :todo (str "todo" x))
@@ -196,7 +160,7 @@
                                (isa! x integer? (str "name" x))
 
                                (isa! x integer?
-                                     :name (str "name" x))
+                                     (str "name" x))
                                (isa! x integer?
                                      :diag (str "diag" x))
                                (isa! x integer?
@@ -311,7 +275,7 @@
                                (=! x x (str "name" x))
 
                                (=! x x
-                                   :name (str "name" x))
+                                   (str "name" x))
                                (=! x x
                                    :diag (str "diag" x))
                                (=! x x
