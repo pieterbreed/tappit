@@ -268,13 +268,13 @@
 
 (defmethod tap-reducer-cleanup ::->java.io.Writer
   [current]
-  (if (not (:planned current)) 
+  (if (not (or (:planned current)
+               (:bailed current)))
     (do (.write (:writer current)
                 (str 
                  "1.."
                  (:tests current)
-                 \newline))))
-  (assoc current :planned true))
+                 \newline)))))
 
 ;; ----------------------------------------
 
