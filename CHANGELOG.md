@@ -2,18 +2,22 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## Planned
+### Fixed
 ### Added
 - `prove` that inspects a TAP stream and reports on success or failure.
 - `TAP` text parser that can turn text into a tap data stream, for use with `prove`.
+- Test coverage for `bail` cases.
 
 ## [Unreleased]
+### Fixed
+- `make-stats-aggregating-reducer` had an error on `bail`s.
+- `reducercommenting-make-` should not comment about the plan after a bailout
 
 ## [0.9.7] - 2016-09-07
-
 ### Changed
 - `tappit.reducer` - multi-method/reduce-based implementation for the tap producer
 - Change `tappit.producer!` to use the `tappit.reducer` api instead of the complected `*out*` and `atom`-based implementation I started with.
-- BREAKING! `[org.clojure/clojure "1.9.0-alpha10"]`
+- BREAKING CHANGE! Requirement on `[org.clojure/clojure "1.9.0-alpha10"]`. This includes `BOOT_CLOJURE_VERSION=1.9.0-alpha10`.
 
 ## [0.9.6] - 2016-09-05
 ### Added
