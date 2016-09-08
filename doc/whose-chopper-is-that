@@ -1,0 +1,110 @@
+#!/usr/bin/env boot
+
+(set-env! :dependencies '[[pieterbreed/tappit "0.9.8-SNAPSHOT"]
+                          [me.raynes/conch "0.8.0"]
+                          [environ "1.0.3"]])
+(require 'environ.core)
+
+(when (not (= "1.9.0-alpha10"
+              (environ.core/env :boot-clojure-version)))
+  (println "# Set ENV variables like this:")
+  (println "# $ export BOOT_CLOJURE_VERSION=1.9.0-alpha10")
+  (println "Bail out! Requires BOOT_CLOJURE_VERSION=1.9.0-alpha10")
+  (System/exit 0))
+
+;; we can import the clojure-1.9.0alpha10 libraries after here
+;; because we're in a dynamic environment!
+(require '[tappit.producer :refer [with-tap! ok]])
+(require '[clojure.string :as str])
+(require '[me.raynes.conch :as conch])
+
+;; ----------------------------------------
+
+(def II (some->> (environ.core/env :ii) (re-find #"\d+") (Integer.)))
+
+(if II
+  (do (with-tap!
+        (ok! ok "when-I-am-truly-alive-I-am->"
+             :diag (. (java.lang.management.ManagementFactory/getRuntimeMXBean)
+                      getName)))
+      (System/exit 0)))
+
+;; ----------------------------------------
+
+;; this is what the user has to set,
+;; USING ENVIRONMENT VARS,
+;; to prove they are alive...
+;; (and can be taught...)
+;; https://github.com/weavejester/environ
+(def I (some->> (environ.core/env :i) ;; <-- is-I-ok? HERE! don't miss it now
+                (re-find #"\d+")      ;; There is more ^^^^^^ higher up.
+                (Integer.)))
+
+
+(with-tap!
+  (when (not I)
+    (let [lines [(str "# Hello " (environ.core/env :user))
+                 ""
+                 "**Do you even [Markdown](http://bfy.tw/P9e)?**"
+                 ""
+                 
+                 "> Whose motorcycle is this?"
+                 ""
+                 "> It's a chopper, baby."
+                 ""
+                 "> Whose chopper is this?"
+                 ""
+                 "> Zed's."
+                 ""
+                 "> Who's Zed?"
+                 ""
+                 "..."]]
+      (dorun
+       (map diag! lines))))
+
+  (ok! ok "i-am-alive" :todo "# prove it! HINT: grep the source code for the test names for clues...")
+
+  (when (not I)
+    (diag! "")
+    (diag! "")
+    (diag! "In bash, try: `cat $(which whose-chopper-is-that) | grep -A 7 is-I-ok`")
+    (diag! "")
+    (diag! ""))
+
+  (ok! I "is-I-ok?" :diag "In bash, try: `i=1 whose-chopper-is-that`")
+
+  (when (not I)
+    (diag! "")
+    (diag! ""))
+  (if
+      (not I) (do
+                (diag! "Nope. You failed. Try again.")
+                (bail-out! "[Zed's dead, baby. Zed's dead.](https://www.youtube.com/watch?v=7Y_NU_OUwvk)"))
+      (do 
+        (ok! I "think-I-am-ok!" :diag (str "I == " I))
+
+        (diag! (str (ok!)))
+
+        (if (isa! I #(> % 1) "bigger-than-1" :diag "? Try a little higher than 'one'...")
+          ;; ok - let's recurse!
+          (do
+            (->> ["OK!"
+                  "I called myself recursively: `ii=1 whose-chopper-is-that`"
+                  "Here is what I thought of that:"]
+                 (map diag!) dorun)
+            (conch/let-programs [this-script "whose-chopper-is-that"]
+              (let [its-what-i-thought (this-script {:seq true
+                                                     :env {"ii" "0"}})]
+                (->> its-what-i-thought (map diag!) dorun))))
+
+          ;; let's not recurse!
+          (diag! "not TOO crazy though. This script will be called recursively"))
+        
+        ;; management information
+        (ok! ok "I-am->"
+             :diag (. (java.lang.management.ManagementFactory/getRuntimeMXBean)
+                      getName))
+
+        (ok! ok "last-bonus-hint" :todo "In bash, try: whose-chopper-is-that | grep \"not ok\""))))
+
+

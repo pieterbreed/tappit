@@ -119,74 +119,95 @@
       (ok! [_]
         (! (tr/test-line :ok
                          (get-test-nr)
-                         "")))
+                         ""))
+        true)
       (ok! [_ thing]
         (! (tr/test-line (-OK! thing)
                          (get-test-nr)
-                         "")))
+                         ""))
+        (boolean thing))
       (ok! [_ thing name]
         (! (tr/test-line (-OK! thing)
                          (get-test-nr)
-                         name)))
+                         name))
+        (boolean thing))
       (ok! [_ thing flag value]
         (! (tr/test-line (-OK! thing)
                          (get-test-nr)
                          ""
                          flag
-                         value)))
+                         value))
+        (boolean thing))
       (ok! [_ thing name flag value]
         (! (tr/test-line (-OK! thing)
                          (get-test-nr)
                          name
                          flag
-                         value)))
+                         value))
+        (boolean thing))
 
       ;; --------------------
       ;; isa!
       
       (isa! [_ thing pred]
-        (! (tr/test-line (-OK! (pred thing))
-                         (get-test-nr)
-                         "")))
+        (let [thing (pred thing)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           ""))
+          (boolean thing)))
       (isa! [_ thing pred name]
-        (! (tr/test-line (-OK! (pred thing))
-                         (get-test-nr)
-                         name)))
+        (let [thing (pred thing)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           name))
+          (boolean thing)))
       (isa! [_ thing pred flag value]
-        (! (tr/test-line (-OK! (pred thing))
-                         (get-test-nr)
-                         ""
-                         flag
-                         value)))
+        (let [thing (pred thing)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           ""
+                           flag
+                           value))
+          (boolean thing)))
       (isa! [_ thing pred name flag value]
-        (! (tr/test-line (-OK! (pred thing))
-                         (get-test-nr)
-                         name
-                         flag
-                         value)))
+        (let [thing (pred thing)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           name
+                           flag
+                           value))
+          (boolean thing)))
 
       ;; --------------------
       ;; =!
       (=! [_ thing1 thing2]
-        (! (tr/test-line (-OK! (= thing1 thing2))
-                         (get-test-nr)
-                         "")))
+        (let [thing (= thing1 thing2)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           ""))
+          (boolean thing)))
       (=! [_ thing1 thing2 name]
-        (! (tr/test-line (-OK! (= thing1 thing2))
-                         (get-test-nr)
-                         name)))
+        (let [thing (= thing1 thing2)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           name))
+          (boolean thing)))
       (=! [_ thing1 thing2 flag value]
-        (! (tr/test-line (-OK! (= thing1 thing2))
-                         (get-test-nr)
-                         ""
-                         flag
-                         value)))
+        (let [thing (= thing1 thing2)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           ""
+                           flag
+                           value))
+          (boolean thing)))
       (=! [_ thing1 thing2 name flag value]
-        (! (tr/test-line (-OK! (= thing1 thing2))
-                         (get-test-nr)
-                         name
-                         flag
-                         value))))))
+        (let [thing (= thing1 thing2)]
+          (! (tr/test-line (-OK! thing)
+                           (get-test-nr)
+                           name
+                           flag
+                           value))
+          (boolean thing))))))
 
 ;; ----------------------------------------
 
