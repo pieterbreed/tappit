@@ -1,6 +1,6 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[pieterbreed/tappit "0.9.8-SNAPSHOT"]
+(set-env! :dependencies '[[pieterbreed/tappit "0.9.8"]
                           [me.raynes/conch "0.8.0"]
                           [environ "1.0.3"]])
 (require 'environ.core)
