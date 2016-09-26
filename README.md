@@ -6,8 +6,9 @@ A Clojure library for producing [TAP](http://testanything.org/) output.
 
 [![Clojars Project](https://img.shields.io/clojars/v/pieterbreed/tappit.svg)](https://clojars.org/pieterbreed/tappit)
 
-
 This work is inspired by [this python TAP library](https://github.com/rjbs/tapsimple).
+
+![What is a tappet?](http://i.stack.imgur.com/LXYSj.jpg)
 
 ## Usage
 
